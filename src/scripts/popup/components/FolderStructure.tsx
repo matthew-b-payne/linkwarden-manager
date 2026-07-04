@@ -41,7 +41,19 @@ export const FolderStructure = ({
         ? (a: Folder, b: Folder) => new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf()
         : (a: Folder, b: Folder) => new Date(b.createdAt).valueOf() - new Date(a.createdAt).valueOf();
   const sortedFolders: Folder[] = [...folders].sort(sortFunction);
-  const rootFolders = sortedFolders.filter((folder) => !folder.parentId);
+
+  const childrenByParentId = new Map<number, Folder[]>();
+  sortedFolders.forEach((folder) => {
+    const parentId = folder.parentId || 0;
+    const siblings = childrenByParentId.get(parentId);
+    if (siblings) {
+      siblings.push(folder);
+    } else {
+      childrenByParentId.set(parentId, [folder]);
+    }
+  });
+
+  const rootFolders = childrenByParentId.get(0) || [];
 
   const renderFolder = (folder: Folder) => (
     <FolderItem
@@ -50,7 +62,7 @@ export const FolderStructure = ({
       openFolders={openFolders}
       toggleFolder={toggleFolder}
       links={linksByFolder[folder.id] || []}
-      subFolders={sortedFolders.filter((f) => f.parentId === folder.id)}
+      subFolders={childrenByParentId.get(folder.id) || []}
       renderFolder={renderFolder}
       loadLinksForFolder={loadLinksForFolder}
       sortLinks={sortLinks}

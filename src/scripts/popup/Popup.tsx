@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Plus, RefreshCcw, FolderPlus, Settings } from 'lucide-react';
 import { BarLoader } from 'react-spinners';
 import Button from '@mui/material/Button';
@@ -39,6 +39,11 @@ const Popup = () => {
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [hasValidConfiguration, setHasValidConfiguration] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const isLoadingRef = useRef(false);
+  const setLoading = useCallback((value: boolean) => {
+    isLoadingRef.current = value;
+    setIsLoading(value);
+  }, []);
   const [linkSort, setLinkSort] = useState("name_ascending");
   const [folderSort, setFolderSort] = useState("name_ascending");
   const [openLinksInNewTab, setOpenLinksInNewTab] = useState(false);
@@ -46,7 +51,7 @@ const Popup = () => {
 
   const loadAllLinks = useCallback(() => {
     console.log("Updating all links");
-    setIsLoading(true);
+    setLoading(true);
     getBrowser().runtime.sendMessage({action: 'fetchAllLinksFromAllFolders'}).then((links: ApiReturnType<LinksByFolder>) => {
       console.log("loadAllLinks -> linksByFolder: " + JSON.stringify(links));
       setStorageItem('lastUpdate', Date.now());
@@ -72,9 +77,9 @@ const Popup = () => {
           return newOpenFolders;
         });
       }
-      setIsLoading(false);
+      setLoading(false);
     });
-  }, []);
+  }, [setLoading]);
 
   useEffect(() => {
     let timerId;
@@ -117,7 +122,11 @@ const Popup = () => {
       }
     });
 
-    timerId = setInterval(() => loadAllLinks(), updateInterval);
+    timerId = setInterval(() => {
+      if (document.visibilityState === 'visible' && !isLoadingRef.current) {
+        loadAllLinks();
+      }
+    }, updateInterval);
 
     return () => {
       clearInterval(timerId);
@@ -166,7 +175,7 @@ const Popup = () => {
 
   const loadLinksForFolder = useCallback((folderId: number) => {
     console.log("loadLinksForFolder");
-    setIsLoading(true);
+    setLoading(true);
     getBrowser().runtime.sendMessage({action: 'fetchLinks', collectionId: folderId}).then((links: ApiReturnType<Link[]>) => {
       if (links.success && links.data) {
         setLinksByFolder((prev) => {
@@ -179,9 +188,9 @@ const Popup = () => {
           return newLinksByFolder;
         });
       }
-      setIsLoading(false);
+      setLoading(false);
     });
-  }, []);
+  }, [setLoading]);
 
   const toggleFolder = useCallback(
     (folderId: number) => {

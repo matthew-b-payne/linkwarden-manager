@@ -135,10 +135,11 @@ export class LinkwardenService implements BookmarkManagerService {
     }
   }
 
-  async _fetchLinksWithCursor(collectionId: number, cursor: number): Promise<ApiReturnType<Link[]>> {
+  async _fetchLinksWithCursor(cursor: number, collectionId?: number): Promise<ApiReturnType<Link[]>> {
     try {
+      const collectionParam = collectionId != null ? `&collectionId=${collectionId}` : '';
       const response = await fetch(
-        `${this.host}/api/v1/search?cursor=${cursor}&sort=0&collectionId=${collectionId}`,
+        `${this.host}/api/v1/search?cursor=${cursor}&sort=0${collectionParam}`,
         {
           headers: {
             Authorization: `Bearer ${this.token}`,
@@ -179,7 +180,7 @@ export class LinkwardenService implements BookmarkManagerService {
     const allLinks: Link[] = [];
 
     while(true) {
-      const result = await this._fetchLinksWithCursor(collectionId, cursor);
+      const result = await this._fetchLinksWithCursor(cursor, collectionId);
       if (!result.success) {
         return {success: false, data: result.data, additionalData: collectionId};
       }
@@ -317,21 +318,35 @@ export class LinkwardenService implements BookmarkManagerService {
   }
 
   async fetchAllLinksFromAllFolders(): Promise<ApiReturnType<LinksByFolder|any>> {
-    const folders = await this.fetchFolders();
-    let allLinks = {};
+    // fetches links across all collections in a single unscoped, cursor-paginated stream
+    // (omitting collectionId makes the Linkwarden /search endpoint return links from every
+    // collection the user has access to) instead of firing one pagination chain per folder
+    let cursor = 0;
+    let count = 0;
+    const allLinks: LinksByFolder = {};
 
-    if(!folders.success) {
-      return { success: false, data: folders.data };
-    }
     try {
-      const allData = await Promise.all(folders.data.map((folder) => this.fetchLinks(folder.id)));
-
-      allData.forEach((data) => {
-        if (!data.success) {
-          throw data.data;
+      while(true) {
+        const result = await this._fetchLinksWithCursor(cursor);
+        if (!result.success) {
+          return { success: false, data: result.data };
         }
-        allLinks[data.additionalData] = data.data;
-      });
+
+        result.data.forEach((link) => {
+          (allLinks[link.folder.id] ??= []).push(link);
+        });
+
+        cursor = result.additionalData;
+
+        if(cursor == null) {
+          break;
+        }
+
+        if(count++ >= 200) {  // each request will return at most 50 elements
+          console.warn("Aborting link fetch after 10000 elements. Consider moving links into subcollections.");
+          break;
+        }
+      }
 
       return {success: true, data: allLinks};
     } catch (error) {
