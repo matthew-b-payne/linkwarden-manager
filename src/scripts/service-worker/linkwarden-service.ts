@@ -271,21 +271,6 @@ export class LinkwardenService implements BookmarkManagerService {
     }
   }
 
-  // runs fn over items with at most `limit` in flight at once, preserving order,
-  // so bulk operations don't fire an unbounded number of parallel requests at the server
-  async _mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
-    const results: R[] = new Array(items.length);
-    let next = 0;
-    const worker = async () => {
-      while (next < items.length) {
-        const i = next++;
-        results[i] = await fn(items[i]);
-      }
-    };
-    await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-    return results;
-  }
-
   // returns the id of a root collection with the given name, creating it if it doesn't exist
   async _findOrCreateFolder(name: string, parentId: number): Promise<ApiReturnType<number>> {
     const folders = await this.fetchFolders();
@@ -325,11 +310,22 @@ export class LinkwardenService implements BookmarkManagerService {
         collectionId = created.data.id;
       }
 
-      // 2. bulk-create the links, capping concurrency; best-effort so one bad tab doesn't abort the batch
-      const results = await this._mapWithConcurrency(req.tabs, 4, (tab) =>
-        this.saveLink({ id: 0, url: tab.url, title: tab.title, collectionId, tags: req.tags }),
-      );
-      const failedUrls = req.tabs.filter((_, i) => !results[i].success).map((tab) => tab.url);
+      // 2. create the links one at a time. Sequential (not parallel) is deliberate:
+      // concurrent creates that share a brand-new tag race on the server and return 500s
+      // (the same tag name gets created multiple times at once). Going in order lets the
+      // first create make the tag and the rest reuse it. Best-effort with a single retry
+      // so one transient failure doesn't drop a tab.
+      const failedUrls: string[] = [];
+      for (const tab of req.tabs) {
+        const link = { id: 0, url: tab.url, title: tab.title, collectionId, tags: req.tags };
+        let res = await this.saveLink(link);
+        if (!res.success) {
+          res = await this.saveLink(link);  // retry once
+        }
+        if (!res.success) {
+          failedUrls.push(tab.url);
+        }
+      }
 
       return {
         success: true,

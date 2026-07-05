@@ -1,74 +1,70 @@
 import { LinkwardenService } from './linkwarden-service';
 import { getBrowser, getStorageItems } from '../utils/utils';
-import { BookmarkManagerService } from './bookmark-manager-service';
-
-let host: string;
-let token: string;
+import { ApiReturnType, BookmarkManagerService } from './bookmark-manager-service';
 
 console.log('Background Service Worker Loaded');
 
-getStorageItems(['host', 'token']).then((result) => {
-  host = result.host;
-  token = result.token;
-});
+// Load credentials fresh from storage for every request rather than caching them
+// in module-level state. Under Manifest V3 the service worker is terminated when
+// idle (even while the popup is open) and respawned on the next message, which
+// would wipe cached credentials and cause requests to be silently dropped.
+async function getCredentials(): Promise<{ host?: string; token?: string }> {
+  const result = await getStorageItems(['host', 'token']);
+  return { host: result.host, token: result.token };
+}
 
+async function handleApiAction(request: any): Promise<ApiReturnType<any>> {
+  const { host, token } = await getCredentials();
+  if (!host || !token) {
+    console.warn('Tried to call Linkwarden API with invalid credentials');
+    return { success: false, data: 'Extension is not configured. Please set your host and API token in the options.' };
+  }
+
+  const service: BookmarkManagerService = new LinkwardenService(host, token);
+  switch (request.action) {
+    case 'fetchAllLinksFromAllFolders':
+      return service.fetchAllLinksFromAllFolders();
+    case 'fetchFolders':
+      return service.fetchFolders();
+    case 'fetchLinks':
+      return service.fetchLinks(request.collectionId);
+    case 'fetchTags':
+      return service.fetchTags();
+    case 'saveLink':
+      return service.saveLink(request.link);
+    case 'saveSession':
+      return service.saveSession(request.data);
+    case 'updateLink':
+      return service.updateLink(request.data, request.collectionOwnerId);
+    case 'deleteLink':
+      return service.deleteLink(request.id);
+    case 'createFolder':
+      return service.createFolder(request.name, request.parentId);
+    case 'updateFolder':
+      return service.updateFolder(request.id, request.name, request.parentId);
+    case 'deleteFolder':
+      return service.deleteFolder(request.id);
+    default:
+      return { success: false, data: 'Unknown action: ' + request.action };
+  }
+}
 
 getBrowser().runtime.onMessage.addListener(function (request, sender, sendResponse) {
   console.log('Message received:', request);
 
   if (request.action === 'hasValidConfiguration') {
-    sendResponse(!!host && !!token);
-    return false;
+    getCredentials().then(({ host, token }) => sendResponse(!!host && !!token));
+    return true;
   } else if (request.action === 'reload') {
-    getStorageItems(['host', 'token']).then((result) => {
-      host = result.host;
-      token = result.token;
-    });
-    return false;
+    // credentials are now read on-demand, so there's nothing to refresh; ack for callers that await it
+    sendResponse(true);
+    return true;
   }
 
-  if(!host || !token)
-  {
-    console.warn('Tried to call Linkwarden API with invalid credentials');
-    return false;
-  }
-
-  const service: BookmarkManagerService = new LinkwardenService(host, token);
-  if (request.action === 'fetchAllLinksFromAllFolders') {
-    service.fetchAllLinksFromAllFolders().then(sendResponse);
-    return true;
-  } else if (request.action === 'fetchFolders') {
-    service.fetchFolders().then(sendResponse);
-    return true;
-  } else if (request.action === 'fetchLinks') {
-    service.fetchLinks(request.collectionId).then(sendResponse);
-    return true;
-  } else if (request.action === 'fetchTags') {
-    service.fetchTags().then(sendResponse);
-    return true;
-  } else if (request.action === 'saveLink') {
-    service.saveLink(request.link).then(sendResponse);
-    return true;
-  } else if (request.action === 'saveSession') {
-    service.saveSession(request.data).then(sendResponse);
-    return true;
-  } else if (request.action === 'updateLink') {
-    service.updateLink(request.data, request.collectionOwnerId).then(sendResponse);
-    return true;
-  } else if (request.action === 'deleteLink') {
-    service.deleteLink(request.id).then(sendResponse);
-    return true;
-  } else if (request.action === 'createFolder') {
-    service.createFolder(request.name, request.parentId).then(sendResponse);
-    return true;
-  } else if (request.action === 'updateFolder') {
-    service.updateFolder(request.id, request.name, request.parentId).then(sendResponse);
-    return true;
-  } else if (request.action === 'deleteFolder') {
-    service.deleteFolder(request.id).then(sendResponse);
-    return true;
-  }
-  return false;
+  // every remaining action hits the Linkwarden API and always sends a response
+  // (success or a failure object) so callers never hang waiting on a dropped message
+  handleApiAction(request).then(sendResponse);
+  return true;
 });
 
 export {};

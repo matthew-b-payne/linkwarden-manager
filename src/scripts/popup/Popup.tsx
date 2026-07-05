@@ -370,10 +370,14 @@ const Popup = () => {
 
   const saveSession = useCallback((req: SaveSessionRequest): Promise<SaveSessionResult | null> => {
     return getBrowser().runtime.sendMessage({action: 'saveSession', data: req}).then((result: ApiReturnType<SaveSessionResult>) => {
-      if (result.success) {
+      if (result && result.success) {
         loadAllLinks();  // refresh so the new session folder and its links show up
         return result.data;
       }
+      return null;
+    }).catch((error) => {
+      // never let the modal hang on a dropped/failed message; surface an error instead
+      console.error('Error saving session:', error);
       return null;
     });
   }, [loadAllLinks]);

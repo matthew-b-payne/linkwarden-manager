@@ -11,7 +11,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Save all tabs in the current window as a session: a new toolbar button
   captures every http(s) tab and saves them, optionally into a new collection
   nested under a "Sessions" folder (or an existing folder), with tags applied
-  to all. Links are bulk-created with a capped concurrency.
+  to all. Links are created sequentially (avoiding server-side races on a
+  shared new tag) with a retry, best-effort so one failed tab doesn't abort
+  the batch.
 - Restore a session: an "open all links in a new window" action on each folder
   reopens its links as a fresh window (`windows.create`), with a confirmation.
 
