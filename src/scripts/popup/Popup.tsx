@@ -368,17 +368,17 @@ const Popup = () => {
     setShowSaveSessionModal(false);
   };
 
-  const saveSession = useCallback((req: SaveSessionRequest): Promise<SaveSessionResult | null> => {
+  const saveSession = useCallback((req: SaveSessionRequest): Promise<ApiReturnType<SaveSessionResult>> => {
     return getBrowser().runtime.sendMessage({action: 'saveSession', data: req}).then((result: ApiReturnType<SaveSessionResult>) => {
       if (result && result.success) {
         loadAllLinks();  // refresh so the new session folder and its links show up
-        return result.data;
+        return result;
       }
-      return null;
+      // preserve the failure reason (or synthesize one) so the modal can show it instead of hanging
+      return result ?? { success: false, data: 'No response from the extension background. Try reloading the extension.' };
     }).catch((error) => {
-      // never let the modal hang on a dropped/failed message; surface an error instead
       console.error('Error saving session:', error);
-      return null;
+      return { success: false, data: String(error?.message ?? error) };
     });
   }, [loadAllLinks]);
 

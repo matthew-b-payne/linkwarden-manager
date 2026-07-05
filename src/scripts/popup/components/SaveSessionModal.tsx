@@ -1,4 +1,5 @@
 import { Folder, SaveSessionRequest, SaveSessionResult, SessionTab, Tag } from '@/scripts/utils/interfaces';
+import { ApiReturnType } from '@/scripts/service-worker/bookmark-manager-service';
 import { getFullPathName } from '@/scripts/utils/utils';
 import React, { useState } from 'react';
 import { BarLoader } from 'react-spinners';
@@ -8,7 +9,7 @@ interface Props {
   tabs: SessionTab[];
   allFolders: Folder[];
   allTags: Tag[];
-  saveSession: (req: SaveSessionRequest) => Promise<SaveSessionResult | null>;
+  saveSession: (req: SaveSessionRequest) => Promise<ApiReturnType<SaveSessionResult>>;
   closeModal: () => void;
 }
 
@@ -35,7 +36,7 @@ export const SaveSessionModal = ({
   const [existingCollectionId, setExistingCollectionId] = useState<number>(sortedFolders[0]?.id ?? 0);
   const [tags, setTags] = useState<string[]>([]);
   const [status, setStatus] = useState<'idle' | 'saving' | 'done'>('idle');
-  const [result, setResult] = useState<SaveSessionResult | null>(null);
+  const [result, setResult] = useState<ApiReturnType<SaveSessionResult> | null>(null);
 
   const canSave =
     tabs.length > 0 &&
@@ -66,18 +67,18 @@ export const SaveSessionModal = ({
 
           {status === 'done' ? (
             <div className="space-y-3">
-              {result ? (
+              {result && result.success ? (
                 <div className="text-sm">
-                  Saved {result.saved} of {tabs.length} tab{tabs.length === 1 ? '' : 's'}.
-                  {result.failed > 0 && (
+                  Saved {result.data.saved} of {tabs.length} tab{tabs.length === 1 ? '' : 's'}.
+                  {result.data.failed > 0 && (
                     <div className="mt-1 text-xs text-red-600 dark:text-red-400">
-                      {result.failed} failed to save.
+                      {result.data.failed} failed to save.
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="text-sm text-red-600 dark:text-red-400">
-                  Error saving session. Please try again.
+                <div className="text-sm text-red-600 dark:text-red-400 break-words">
+                  Error saving session: {(result && String(result.data)) || 'no response from the extension background'}.
                 </div>
               )}
               <div className="flex justify-end">
