@@ -1,4 +1,4 @@
-import { Folder, Link, LinksByFolder, NewLink, Tag } from "../utils/interfaces";
+import { Folder, Link, LinksByFolder, NewLink, SaveSessionRequest, SaveSessionResult, Tag } from "../utils/interfaces";
 import { normalizeColor } from "../utils/utils";
 import { ApiReturnType, BookmarkManagerService } from "./bookmark-manager-service";
 
@@ -267,6 +267,81 @@ export class LinkwardenService implements BookmarkManagerService {
       return { success: true, data: data.response };
     } catch (error) {
       console.error('Error saving link: ', error);
+      return { success: false, data: error.message };
+    }
+  }
+
+  // runs fn over items with at most `limit` in flight at once, preserving order,
+  // so bulk operations don't fire an unbounded number of parallel requests at the server
+  async _mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+    const results: R[] = new Array(items.length);
+    let next = 0;
+    const worker = async () => {
+      while (next < items.length) {
+        const i = next++;
+        results[i] = await fn(items[i]);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+    return results;
+  }
+
+  // returns the id of a root collection with the given name, creating it if it doesn't exist
+  async _findOrCreateFolder(name: string, parentId: number): Promise<ApiReturnType<number>> {
+    const folders = await this.fetchFolders();
+    if (!folders.success) {
+      return { success: false, data: folders.data as any };
+    }
+    const existing = folders.data.find((f) => f.name === name && (f.parentId ?? 0) === parentId);
+    if (existing) {
+      return { success: true, data: existing.id };
+    }
+    const created = await this.createFolder(name, parentId);
+    if (!created.success) {
+      return { success: false, data: created.data };
+    }
+    return { success: true, data: created.data.id };
+  }
+
+  async saveSession(req: SaveSessionRequest): Promise<ApiReturnType<SaveSessionResult>> {
+    try {
+      // 1. resolve the target collection, creating a (optionally nested) new one if needed
+      let collectionId: number;
+      if (req.destination.type === 'existing') {
+        collectionId = req.destination.collectionId;
+      } else {
+        let parentId = 0;
+        if (req.destination.nestUnderSessions) {
+          const parent = await this._findOrCreateFolder('Sessions', 0);
+          if (!parent.success) {
+            throw 'Could not create Sessions folder: ' + parent.data;
+          }
+          parentId = parent.data;
+        }
+        const created = await this.createFolder(req.destination.name, parentId);
+        if (!created.success) {
+          throw 'Could not create session folder: ' + created.data;
+        }
+        collectionId = created.data.id;
+      }
+
+      // 2. bulk-create the links, capping concurrency; best-effort so one bad tab doesn't abort the batch
+      const results = await this._mapWithConcurrency(req.tabs, 4, (tab) =>
+        this.saveLink({ id: 0, url: tab.url, title: tab.title, collectionId, tags: req.tags }),
+      );
+      const failedUrls = req.tabs.filter((_, i) => !results[i].success).map((tab) => tab.url);
+
+      return {
+        success: true,
+        data: {
+          collectionId,
+          saved: req.tabs.length - failedUrls.length,
+          failed: failedUrls.length,
+          failedUrls,
+        },
+      };
+    } catch (error) {
+      console.error('Error saving session: ', error);
       return { success: false, data: error.message };
     }
   }

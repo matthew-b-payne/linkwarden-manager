@@ -49,6 +49,9 @@ getBrowser().runtime.onMessage.addListener(function (request, sender, sendRespon
   } else if (request.action === 'saveLink') {
     service.saveLink(request.link).then(sendResponse);
     return true;
+  } else if (request.action === 'saveSession') {
+    service.saveSession(request.data).then(sendResponse);
+    return true;
   } else if (request.action === 'updateLink') {
     service.updateLink(request.data, request.collectionOwnerId).then(sendResponse);
     return true;

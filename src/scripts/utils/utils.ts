@@ -11,6 +11,13 @@ export async function getCurrentTabInfo(): Promise<{ title: string | undefined; 
   return { url, title };
 }
 
+export async function getCurrentWindowTabs(): Promise<TabInfo[]> {
+  const tabs = await getBrowser().tabs.query({ currentWindow: true });
+  return tabs
+    .filter((tab: { url?: string }) => tab.url && /^https?:\/\//.test(tab.url))  // skip chrome://, about:, and extension pages that can't be saved as links
+    .map((tab: { url: string; title?: string }) => ({ url: tab.url, title: tab.title ?? '' }));
+}
+
 export function getBrowser() {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   //@ts-ignore

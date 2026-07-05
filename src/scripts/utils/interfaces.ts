@@ -34,3 +34,25 @@ export interface NewLink {
     collectionId: number;
     tags: string[];
 }
+
+export interface SessionTab {
+    url: string;
+    title: string;
+}
+
+export type SaveSessionDestination =
+    | { type: 'new'; name: string; nestUnderSessions: boolean }
+    | { type: 'existing'; collectionId: number };
+
+export interface SaveSessionRequest {
+    destination: SaveSessionDestination;
+    tabs: SessionTab[];
+    tags: string[];
+}
+
+export interface SaveSessionResult {
+    collectionId: number;
+    saved: number;
+    failed: number;
+    failedUrls: string[];
+}

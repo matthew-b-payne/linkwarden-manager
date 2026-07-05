@@ -1,7 +1,7 @@
 import { Folder, NewLink, Tag } from '@/scripts/utils/interfaces';
 import { getFullPathName } from '@/scripts/utils/utils';
 import React from 'react';
-import CreatableSelect from 'react-select/creatable';
+import { TagSelect } from './TagSelect';
 
 interface Props {
   newLink: NewLink;
@@ -22,8 +22,6 @@ export const AddLinkModal = ({
   saveNewLink,
   closeAddLinkModal,
 }: Props) => {
-  const allTagOptions = allTags.map((tag) => ({value: tag.id, label: tag.name}));
-  const selectedTags = allTagOptions.filter((tag) => newLink.tags.includes(tag.label))
   const sortedFolders: Folder[] = allFolders
     .map((folder) => ({...folder, name: getFullPathName(allFolders, folder)}))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -94,25 +92,11 @@ export const AddLinkModal = ({
                 </select>
               </div>
             )}
-            <div>
-              <label
-                htmlFor="tagIds"
-                className="block text-xs font-medium mb-1"
-              >
-                Tags
-              </label>
-              <CreatableSelect
-                isMulti
-                name='tagIds'
-                id='tagIds'
-                options={allTagOptions}
-                value={selectedTags}
-                maxMenuHeight={120}
-                onChange={(values) => {handleTagChange(values.map((value) => value.label))}}
-                className='custom-react-select-container'
-                classNamePrefix='custom-react-select'
-              />
-            </div>
+            <TagSelect
+              allTags={allTags}
+              selected={newLink.tags}
+              onChange={handleTagChange}
+            />
           </div>
           <div className="mt-1 flex justify-end space-x-3">
             <button

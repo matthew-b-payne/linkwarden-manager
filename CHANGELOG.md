@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Save all tabs in the current window as a session: a new toolbar button
+  captures every http(s) tab and saves them, optionally into a new collection
+  nested under a "Sessions" folder (or an existing folder), with tags applied
+  to all. Links are bulk-created with a capped concurrency.
+- Restore a session: an "open all links in a new window" action on each folder
+  reopens its links as a fresh window (`windows.create`), with a confirmation.
+
 ### Changed
 
 - Popup bundle size reduced from ~5MB to ~470KB by lazy-loading phosphor

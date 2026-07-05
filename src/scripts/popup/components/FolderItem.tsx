@@ -1,5 +1,5 @@
-import { FolderOpen, Folder, ChevronRight, Trash2, Edit3 } from 'lucide-react';
-import React, { useEffect } from 'react';
+import { FolderOpen, Folder, ChevronRight, Trash2, Edit3, FolderOutput } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { LinkItem } from './LinkItem';
 import { Folder as FolderInterface, Link, NewLink } from '@/scripts/utils/interfaces';
 import { IconWeight } from '@phosphor-icons/react';
@@ -17,6 +17,7 @@ interface Props {
   showEditLinkModal: (link: NewLink) => void;
   showEditFolderModal: (folder: FolderInterface) => void;
   showDeleteFolderModal: (folder: FolderInterface) => void;
+  openAllInFolder: (folderId: number) => void;
   canShowOverlayButtons: boolean;
   openLinksInNewTab: boolean;
 }
@@ -33,10 +34,12 @@ export const FolderItem = ({
   showEditLinkModal,
   showEditFolderModal,
   showDeleteFolderModal,
+  openAllInFolder,
   canShowOverlayButtons,
   openLinksInNewTab,
 }: Props) => {
   const isOpen: boolean = openFolders.has(folder.id);
+  const [showConfirmOpenAll, setShowConfirmOpenAll] = useState(false);
   // set the sorting function depending on the parameter
   // do not pull the condition into the function to make sure the performance is not impacted when sorting a huge number of links
   const sortFunction = sortLinks == 'name_ascending'
@@ -88,6 +91,16 @@ export const FolderItem = ({
           <div className='absolute top-0 right-[20px] z-10 h-full flex mr-4'>
             <div className='m-auto space-x-2'>
               <button
+                className={'text-gray-400 bg-gray-200/90 dark:bg-gray-700/90 hover:text-green-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200'}
+                title="Open all links in a new window"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowConfirmOpenAll(true);
+                }}
+              >
+                <FolderOutput size={20} />
+              </button>
+              <button
                 className={'text-gray-400 bg-gray-200/90 dark:bg-gray-700/90 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200'}
                 title="Edit folder"
                 onClick={(e) => {
@@ -106,6 +119,35 @@ export const FolderItem = ({
                 }}
               >
                 <Trash2 size={20} />
+              </button>
+            </div>
+          </div>
+        )}
+        {showConfirmOpenAll && (
+          <div
+            className={'absolute inset-0 z-20 flex items-center justify-center bg-white/95 dark:bg-gray-800/95 rounded-md'}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center text-xs">
+              <span className="mr-2">Open all links in a new window?</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openAllInFolder(folder.id);
+                  setShowConfirmOpenAll(false);
+                }}
+                className="px-2 py-1 bg-blue-500 text-white rounded-md mr-2 hover:bg-blue-600"
+              >
+                Open
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowConfirmOpenAll(false);
+                }}
+                className={'px-2 py-1 rounded-md bg-gray-300 text-gray-700 hover:bg-gray-400 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'}
+              >
+                Cancel
               </button>
             </div>
           </div>

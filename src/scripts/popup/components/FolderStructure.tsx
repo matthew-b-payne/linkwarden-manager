@@ -13,6 +13,7 @@ interface Props {
   showEditLinkModal: (link: NewLink) => void;
   showEditFolderModal: (folder: Folder) => void;
   showDeleteFolderModal: (folder: Folder) => void;
+  openAllInFolder: (folderId: number) => void;
   canShowOverlayButtons: boolean;
   openLinksInNewTab: boolean;
 }
@@ -28,6 +29,7 @@ export const FolderStructure = ({
   showEditLinkModal,
   showEditFolderModal,
   showDeleteFolderModal,
+  openAllInFolder,
   canShowOverlayButtons,
   openLinksInNewTab,
 }: Props) => {
@@ -69,6 +71,7 @@ export const FolderStructure = ({
       showEditLinkModal={showEditLinkModal}
       showEditFolderModal={showEditFolderModal}
       showDeleteFolderModal={showDeleteFolderModal}
+      openAllInFolder={openAllInFolder}
       canShowOverlayButtons={canShowOverlayButtons}
       openLinksInNewTab={openLinksInNewTab}
     />

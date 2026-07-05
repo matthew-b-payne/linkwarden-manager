@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Plus, RefreshCcw, FolderPlus, Settings } from 'lucide-react';
+import { Search, Plus, RefreshCcw, FolderPlus, Settings, SquareStack } from 'lucide-react';
 import { BarLoader } from 'react-spinners';
 import Button from '@mui/material/Button';
 import { AddLinkModal } from './components/AddLinkModal';
 import { FolderStructure } from './components/FolderStructure';
 import { SearchResults } from './components/SearchResults';
-import { defaultFolderColor, getBrowser, getCurrentTabInfo, getStorageItem, openOptions, setStorageItem } from '../utils/utils';
+import { SaveSessionModal } from './components/SaveSessionModal';
+import { defaultFolderColor, getBrowser, getCurrentTabInfo, getCurrentWindowTabs, getStorageItem, openOptions, setStorageItem } from '../utils/utils';
 import { IconButton } from '@mui/material';
 import { DeleteFolderModal } from './components/DeleteFolderModal';
 import { AddFolderModal } from './components/AddFolderModal';
-import { Folder, Link, LinksByFolder, NewLink, Tag } from '../utils/interfaces';
+import { Folder, Link, LinksByFolder, NewLink, SaveSessionRequest, SaveSessionResult, SessionTab, Tag } from '../utils/interfaces';
 import { ApiReturnType } from '../service-worker/bookmark-manager-service';
 
 const Popup = () => {
@@ -22,6 +23,8 @@ const Popup = () => {
   const [showAddFolderModal, setShowAddFolderModal] = useState(false);
   const [showEditFolderModal, setShowEditFolderModal] = useState(false);
   const [showDeleteFolderModal, setShowDeleteFolderModal] = useState(false);
+  const [showSaveSessionModal, setShowSaveSessionModal] = useState(false);
+  const [sessionTabs, setSessionTabs] = useState<SessionTab[]>([]);
   const [newFolder, setNewFolder] = useState<Folder>({
     id: 0,
     name: '',
@@ -349,13 +352,53 @@ const Popup = () => {
     });
   };
 
+  const openSaveSessionModal = useCallback(() => {
+    getCurrentWindowTabs().then((tabs) => {
+      setSessionTabs(tabs);
+      return getBrowser().runtime.sendMessage({action: 'fetchTags'});
+    }).then((tags: ApiReturnType<Tag[]>) => {
+      if (tags.success && tags.data) {
+        setAllTags(tags.data);
+      }
+      setShowSaveSessionModal(true);
+    });
+  }, []);
+
+  const closeSaveSessionModal = () => {
+    setShowSaveSessionModal(false);
+  };
+
+  const saveSession = useCallback((req: SaveSessionRequest): Promise<SaveSessionResult | null> => {
+    return getBrowser().runtime.sendMessage({action: 'saveSession', data: req}).then((result: ApiReturnType<SaveSessionResult>) => {
+      if (result.success) {
+        loadAllLinks();  // refresh so the new session folder and its links show up
+        return result.data;
+      }
+      return null;
+    });
+  }, [loadAllLinks]);
+
+  const openAllInFolder = useCallback((folderId: number) => {
+    // fetch the folder's links fresh so restore works even for collapsed/uncached folders
+    getBrowser().runtime.sendMessage({action: 'fetchLinks', collectionId: folderId}).then((res: ApiReturnType<Link[]>) => {
+      if (!res.success || !res.data) {
+        return;
+      }
+      const urls = res.data.map((link) => link.url);
+      if (urls.length === 0) {
+        return;
+      }
+      getBrowser().windows.create({url: urls});
+    });
+  }, []);
+
   const openLinkwarden = () => {
     getStorageItem('host').then((host) => {
       getBrowser().tabs.create({'url': host});
     });
   };
 
-  const isAnyModalShown = showAddLinkModal || showDeleteFolderModal || showEditLinkModal || showAddFolderModal || showEditFolderModal;
+  const isAnyModalShown = showAddLinkModal || showDeleteFolderModal || showEditLinkModal || showAddFolderModal || showEditFolderModal || showSaveSessionModal;
 
   if(hasValidConfiguration) {
     return (
@@ -392,6 +435,14 @@ const Popup = () => {
               text-white focus:outline-none focus:ring-2 focus:ring-blue-500`}
           >
             <FolderPlus size={20} />
+          </button>
+          <button
+            onClick={openSaveSessionModal}
+            title='Save all tabs'
+            className={`ml-2 p-2 rounded-md bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700
+              text-white focus:outline-none focus:ring-2 focus:ring-blue-500`}
+          >
+            <SquareStack size={20} />
           </button>
           <button
             onClick={loadAllLinks}
@@ -443,6 +494,7 @@ const Popup = () => {
               showEditLinkModal={openEditLinkModal}
               showEditFolderModal={openEditFolderModal}
               showDeleteFolderModal={openDeleteFolderModal}
+              openAllInFolder={openAllInFolder}
               canShowOverlayButtons={!isAnyModalShown}
               openLinksInNewTab={openLinksInNewTab}
             />
@@ -493,6 +545,15 @@ const Popup = () => {
             handleNewFolderChange={handleNewFolderChange}
             saveNewFolder={saveEditFolder}
             closeAddFolderModal={closeEditFolderModal}
+          />
+        )}
+        {showSaveSessionModal && (
+          <SaveSessionModal
+            tabs={sessionTabs}
+            allFolders={folders}
+            allTags={allTags}
+            saveSession={saveSession}
+            closeModal={closeSaveSessionModal}
           />
         )}
       </div>
