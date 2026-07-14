@@ -177,7 +177,7 @@ const createBaseFirefoxManifest = async (): Promise<ManifestFirefox> => {
 
 const getManifest = async (resources: string[]): Promise<ManifestChrome | ManifestFirefox> => {
   try {
-    const target = process.env.TARGET_BROWSER;
+    const target = process.env.TARGET_BROWSER || 'CHROME';
 
     if (target === 'CHROME') {
       const baseManifest = await createBaseChromeManifest();
