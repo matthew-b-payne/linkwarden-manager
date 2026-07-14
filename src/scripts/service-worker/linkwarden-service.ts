@@ -2,6 +2,16 @@ import { Folder, Link, LinksByFolder, NewLink, SaveSessionRequest, SaveSessionRe
 import { normalizeColor } from "../utils/utils";
 import { ApiReturnType, BookmarkManagerService } from "./bookmark-manager-service";
 
+function errorToMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+}
+
 interface FetchFolderInfo {
   id: number;
   name: string;
@@ -112,7 +122,7 @@ export class LinkwardenService implements BookmarkManagerService {
       return {success: true, data: result};
     } catch (error) {
       console.error('Error fetching folders: ', error);
-      return {success: false, data: error.message};
+      return {success: false, data: errorToMessage(error)};
     }
   }
 
@@ -131,7 +141,7 @@ export class LinkwardenService implements BookmarkManagerService {
       return {success: true, data: data.response};
     } catch (error) {
       console.error('Error fetching folders: ', error);
-      return {success: false, data: error.message};
+      return {success: false, data: errorToMessage(error)};
     }
   }
 
@@ -170,23 +180,23 @@ export class LinkwardenService implements BookmarkManagerService {
       return {success: true, data: result, additionalData: data.data.nextCursor};
     } catch (error) {
       console.error('Error fetching links: ', error);
-      return {success: false, data: error.message};
+      return {success: false, data: errorToMessage(error)};
     }
   }
 
   async fetchLinks(collectionId: number): Promise<ApiReturnType<Link[]>> {
-    let cursor = 0;
+    let cursor: number | null = 0;
     let count = 0;
     const allLinks: Link[] = [];
 
     while(true) {
       const result = await this._fetchLinksWithCursor(cursor, collectionId);
-      if (!result.success) {
+      if (result.success === false) {
         return {success: false, data: result.data, additionalData: collectionId};
       }
       allLinks.push(...result.data);
 
-      cursor = result.additionalData;
+      cursor = typeof result.additionalData === 'number' ? result.additionalData : null;
 
       if(cursor == null) {
         break;
@@ -217,23 +227,23 @@ export class LinkwardenService implements BookmarkManagerService {
       return {success: true, data: result, additionalData: data.data.nextCursor};
     } catch (error) {
       console.error('Error fetching tags: ', error);
-      return {success: false, data: error.message};
+      return {success: false, data: errorToMessage(error)};
     }
   }
 
   async fetchTags(): Promise<ApiReturnType<Tag[]>> {
-    let cursor = 0;
+    let cursor: number | null = 0;
     let count = 0;
     const allTags: Tag[] = [];
 
-     while(true) {
+    while(true) {
       const result = await this._fetchTagsWithCursor(cursor);
-      if (!result.success) {
+      if (result.success === false) {
         return {success: false, data: result.data};
       }
       allTags.push(...result.data);
 
-      cursor = result.additionalData;
+      cursor = typeof result.additionalData === 'number' ? result.additionalData : null;
 
       if(cursor == null) {
         break;
@@ -267,7 +277,7 @@ export class LinkwardenService implements BookmarkManagerService {
       return { success: true, data: data.response };
     } catch (error) {
       console.error('Error saving link: ', error);
-      return { success: false, data: error.message };
+      return { success: false, data: errorToMessage(error) };
     }
   }
 
@@ -338,7 +348,7 @@ export class LinkwardenService implements BookmarkManagerService {
       };
     } catch (error) {
       console.error('Error saving session: ', error);
-      return { success: false, data: error.message };
+      return { success: false, data: errorToMessage(error) };
     }
   }
 
@@ -358,7 +368,7 @@ export class LinkwardenService implements BookmarkManagerService {
       return { success: true, data: data.response };
     } catch (error) {
       console.error('Error deleting link: ', error);
-      return { success: false, data: error.message };
+      return { success: false, data: errorToMessage(error) };
     }
   }
 
@@ -384,22 +394,22 @@ export class LinkwardenService implements BookmarkManagerService {
       return { success: true, data: data.response };
     } catch (error) {
       console.error('Error updating link: ', error);
-      return { success: false, data: error.message };
+      return { success: false, data: errorToMessage(error) };
     }
   }
 
-  async fetchAllLinksFromAllFolders(): Promise<ApiReturnType<LinksByFolder|any>> {
+  async fetchAllLinksFromAllFolders(): Promise<ApiReturnType<LinksByFolder>> {
     // fetches links across all collections in a single unscoped, cursor-paginated stream
     // (omitting collectionId makes the Linkwarden /search endpoint return links from every
     // collection the user has access to) instead of firing one pagination chain per folder
-    let cursor = 0;
+    let cursor: number | null = 0;
     let count = 0;
     const allLinks: LinksByFolder = {};
 
     try {
       while(true) {
         const result = await this._fetchLinksWithCursor(cursor);
-        if (!result.success) {
+        if (result.success === false) {
           return { success: false, data: result.data };
         }
 
@@ -407,7 +417,7 @@ export class LinkwardenService implements BookmarkManagerService {
           (allLinks[link.folder.id] ??= []).push(link);
         });
 
-        cursor = result.additionalData;
+        cursor = typeof result.additionalData === 'number' ? result.additionalData : null;
 
         if(cursor == null) {
           break;
@@ -422,7 +432,7 @@ export class LinkwardenService implements BookmarkManagerService {
       return {success: true, data: allLinks};
     } catch (error) {
       console.error('Error fetching links: ', error);
-      return {success: false, data: error.message};
+      return {success: false, data: errorToMessage(error)};
     }
   }
 
@@ -448,7 +458,7 @@ export class LinkwardenService implements BookmarkManagerService {
       return { success: true, data: data.response };
     } catch (error) {
       console.error('Error creating collection: ', error);
-      return { success: false, data: error.message };
+      return { success: false, data: errorToMessage(error) };
     }
   }
 
@@ -482,7 +492,7 @@ export class LinkwardenService implements BookmarkManagerService {
       return { success: true, data: data.response };
     } catch (error) {
       console.error('Error creating collection: ', error);
-      return { success: false, data: error.message };
+      return { success: false, data: errorToMessage(error) };
     }
   }
 
@@ -502,7 +512,7 @@ export class LinkwardenService implements BookmarkManagerService {
       return { success: true, data: data.response };
     } catch (error) {
       console.error('Error deleting link: ', error);
-      return { success: false, data: error.message };
+      return { success: false, data: errorToMessage(error) };
     }
   }
 }

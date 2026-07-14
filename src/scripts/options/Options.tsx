@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Save, RefreshCw } from 'lucide-react';
 import { getBrowser, getStorageItem, setStorageItem } from '../utils/utils';
 import { ApiReturnType } from '../service-worker/bookmark-manager-service';
-import { Folder, Link } from '../utils/interfaces';
+import { Folder, LinksByFolder } from '../utils/interfaces';
 
 const Options = () => {
   const [host, setHost] = useState('');
@@ -58,36 +58,44 @@ const Options = () => {
     });
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setStatus({isError: false, text: 'Refreshing data...'});
 
-    getBrowser().runtime.sendMessage({action: 'fetchAllLinksFromAllFolders'})
-    .then((links: ApiReturnType<Link[]>) => {
+    try {
+      const links: ApiReturnType<LinksByFolder> = await getBrowser().runtime.sendMessage({action: 'fetchAllLinksFromAllFolders'});
       console.log(links);
-      if(!links.success) {
-        setStatus({isError: true, text: 'Error refreshing data. Please check your settings.'});
-        setTimeout(() => setStatus({isError: false, text: ''}), 3000);
+      if (!links?.success) {
+        setStatus({
+          isError: true,
+          text: `Error refreshing data: ${links?.data || 'no response from the extension background. Try reloading the extension.'}`,
+        });
+        setTimeout(() => setStatus({isError: false, text: ''}), 8000);
         return;
       }
-      if(links.data) {
-        setStorageItem('linksByFolder', links.data);
+      if (links.data) {
+        await setStorageItem('linksByFolder', links.data);
       }
-      return getBrowser().runtime.sendMessage({action: 'fetchFolders'});
-    }).then((folders: ApiReturnType<Folder[]>) => {
-      if(!folders.success) {
-        setStatus({isError: true, text: 'Error refreshing data. Please check your settings.'});
-        setTimeout(() => setStatus({isError: false, text: ''}), 3000);
+
+      const folders: ApiReturnType<Folder[]> = await getBrowser().runtime.sendMessage({action: 'fetchFolders'});
+      if (!folders?.success) {
+        setStatus({
+          isError: true,
+          text: `Error refreshing data: ${folders?.data || 'no response from the extension background. Try reloading the extension.'}`,
+        });
+        setTimeout(() => setStatus({isError: false, text: ''}), 8000);
         return;
       }
-      if(folders.data) {
-        setStorageItem('allFolders', folders.data);
+      if (folders.data) {
+        await setStorageItem('allFolders', folders.data);
       }
+
       setStatus({isError: false, text: 'Data refreshed successfully.'});
       setTimeout(() => setStatus({isError: false, text: ''}), 3000);
-    }).catch(() => {
-      setStatus({isError: true, text: 'Error refreshing data. Please check your settings.'});
-      setTimeout(() => setStatus({isError: false, text: ''}), 3000);
-    });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setStatus({isError: true, text: `Error refreshing data: ${message}`});
+      setTimeout(() => setStatus({isError: false, text: ''}), 8000);
+    }
   };
 
   const toggleShowToken = () => setShowToken(!showToken);
