@@ -30,6 +30,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The popup's 60s auto-refresh interval now skips ticks while a fetch is
   already in flight or the popup isn't visible.
 
+### Fixed
+
+- Fetching links and tags surfaced `undefined` instead of the real Linkwarden
+  error (e.g. an invalid API token) on failure, because the cursor-paginated
+  `/api/v1/search` and `/api/v1/tags` error paths read the wrong response
+  field (`data.data` instead of `data.response`).
+
 ## [1.0.5] - 2026-05-04
 
 ### Fixed

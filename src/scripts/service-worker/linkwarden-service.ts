@@ -47,6 +47,7 @@ interface FetchLinksResponse {
       collection: FetchFolderInfo;
     }[];
   };
+  response?: string;
 }
 
 interface FetchTagsResponse {
@@ -56,6 +57,7 @@ interface FetchTagsResponse {
       id: number;
       name: string;}[];
   };
+  response?: string;
 }
 
 interface CreateLinkRequest {
@@ -159,7 +161,7 @@ export class LinkwardenService implements BookmarkManagerService {
       );
       const data: FetchLinksResponse = await response.json();
       if(response.status !== 200) {
-        throw 'Could not fetch links: ' + data.data;
+        throw 'Could not fetch links: ' + data.response;
       }
       const result: Link[] = data.data.links.map((value) => ({
         id: value.id,
@@ -221,7 +223,7 @@ export class LinkwardenService implements BookmarkManagerService {
       });
       const data: FetchTagsResponse = await response.json();
       if(response.status !== 200) {
-        throw 'Could not fetch tags: ' + data.data;
+        throw 'Could not fetch tags: ' + data.response;
       }
       const result: Tag[] = data.data.tags.map((value) => ({id: value.id, name: value.name}));
       return {success: true, data: result, additionalData: data.data.nextCursor};
