@@ -40,10 +40,10 @@ const Popup = () => {
     collectionId: 0,
     tags: [],
   });
-
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [hasValidConfiguration, setHasValidConfiguration] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const isLoadingRef = useRef(false);
   const setLoading = useCallback((value: boolean) => {
     isLoadingRef.current = value;
@@ -263,14 +263,16 @@ const Popup = () => {
   const handleNewLinkChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
-    setNewLink({ ...newLink, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setNewLink((prev) => ({ ...prev, [name]: value }));
   };
 
 
   const handleNewFolderChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
-    setNewFolder({ ...newFolder, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setNewFolder((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleTagChange = (newTags: string[]) => {
@@ -284,8 +286,9 @@ const Popup = () => {
         });
       }
     });
-    setNewLink({ ...newLink, tags: filteredNewTags });
+    setNewLink((prev) => ({ ...prev, tags: filteredNewTags }));
   };
+
 
   const saveNewLink = (e: React.FormEvent) => {
     e.preventDefault();
@@ -302,7 +305,6 @@ const Popup = () => {
         }
     });
   };
-
   const saveNewFolder = (e: React.FormEvent) => {
     e.preventDefault();
     getBrowser().runtime.sendMessage({action: 'createFolder', name: newFolder.name, parentId: newFolder.parentId}).then((result: ApiReturnType<any>) => {
@@ -314,6 +316,34 @@ const Popup = () => {
         }
     });
   };
+
+  const handleCreateFolderFromLinkModal = useCallback((name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setIsCreatingFolder(true);
+    // create at root (parentId 0) — keeps UX simple and matches "create here"; if user
+    // needs nested, they can still open the full Add Folder modal via toolbar button.
+    getBrowser().runtime.sendMessage({action: 'createFolder', name: trimmed, parentId: 0}).then((result: ApiReturnType<any>) => {
+      if (result.success && result.data) {
+        const newFolderId = typeof result.data === 'object' ? result.data.id : result.data;
+        // fetch fresh folder list then select the new one
+        getBrowser().runtime.sendMessage({action: 'fetchFolders'}).then((foldersResult: ApiReturnType<Folder[]>) => {
+          if (foldersResult.success && foldersResult.data) {
+            setFolders(foldersResult.data);
+            setStorageItem('allFolders', foldersResult.data);
+            setNewLink((prev) => ({ ...prev, collectionId: newFolderId }));
+          }
+        });
+      } else {
+        alert('Error creating folder. Please try again.');
+      }
+      setIsCreatingFolder(false);
+    }).catch(() => {
+      alert('Error creating folder. Please try again.');
+      setIsCreatingFolder(false);
+    });
+  }, []);
+
 
   const openEditLinkModal = useCallback((link: NewLink) => {
     setNewLink(link);
@@ -527,6 +557,8 @@ const Popup = () => {
             handleTagChange={handleTagChange}
             saveNewLink={saveNewLink}
             closeAddLinkModal={closeAddLinkModal}
+            onCreateFolder={handleCreateFolderFromLinkModal}
+            isCreatingFolder={isCreatingFolder}
           />
         )}
         {showEditLinkModal && (
@@ -538,6 +570,8 @@ const Popup = () => {
             handleTagChange={handleTagChange}
             saveNewLink={saveEditLink}
             closeAddLinkModal={closeEditLinkModal}
+            onCreateFolder={handleCreateFolderFromLinkModal}
+            isCreatingFolder={isCreatingFolder}
           />
         )}
         {showAddFolderModal && (
