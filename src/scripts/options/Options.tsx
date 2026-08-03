@@ -130,23 +130,19 @@ const Options = () => {
   const toggleShowToken = () => setShowToken(!showToken);
 
   const inputClass = `mt-1 block w-full px-3 py-2 text-sm rounded-md shadow-sm transition duration-150 ease-in-out
-    bg-white border-gray-300 text-gray-900 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50
-    dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:border-blue-400 dark:focus:ring dark:focus:ring-blue-400 dark:focus:ring-opacity-50`;
+    bg-surface border-border text-base-content focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50`;
 
-  const labelClassNames = 'block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300';
+  const selectClass = `w-full px-1 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary text-sm
+    bg-surface border-border text-base-content`;
+
+  const labelClassNames = 'block text-sm font-medium mb-1 text-muted';
 
   return (
-    <div
-      className={'min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-white'}
-    >
-      <div
-        className={'max-w-lg mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden'}
-      >
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-base-200 text-base-content">
+      <div className="max-w-lg mx-auto bg-surface rounded-lg shadow-lg overflow-hidden">
         <div className="px-8 py-10">
-          <h1
-            className={'text-3xl font-bold text-center mb-8 text-blue-600 dark: text-blue-400'}
-          >
-            Linkwarden Viewer Options
+          <h1 className="text-3xl font-bold text-center mb-8 text-primary">
+            Linkwarden Manager Options
           </h1>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -189,13 +185,9 @@ const Options = () => {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
                   {showToken ? (
-                    <EyeOff
-                      className={'h-5 w-5 text-gray-500 dark:text-gray-400'}
-                    />
+                    <EyeOff className="h-5 w-5 text-muted" />
                   ) : (
-                    <Eye
-                      className={'h-5 w-5 text-gray-500 dark:text-gray-400'}
-                    />
+                    <Eye className="h-5 w-5 text-muted" />
                   )}
                 </button>
               </div>
@@ -212,8 +204,7 @@ const Options = () => {
                 id="linkSort"
                 value={linkSort}
                 onChange={(e) => {setLinkSort(e.target.value)}}
-                className={`w-full px-1 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm
-                  bg-white border-gray-300 text-black dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
+                className={selectClass}
               >
                 <option key="name_ascending" value="name_ascending">Name Ascending</option>
                 <option key="name_descending" value="name_descending">Name Descending</option>
@@ -233,8 +224,7 @@ const Options = () => {
                 id="folderSort"
                 value={folderSort}
                 onChange={(e) => {setFolderSort(e.target.value)}}
-                className={`w-full px-1 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm
-                  bg-white border-gray-300 text-black dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
+                className={selectClass}
               >
                 <option key="name_ascending" value="name_ascending">Name Ascending</option>
                 <option key="name_descending" value="name_descending">Name Descending</option>
@@ -283,15 +273,14 @@ const Options = () => {
                   id="savedIndicatorRefreshMinutes"
                   value={savedIndicatorRefreshMinutes}
                   onChange={(e) => setSavedIndicatorRefreshMinutes(Number(e.target.value))}
-                  className={`w-full px-1 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm
-                    bg-white border-gray-300 text-black dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
+                  className={selectClass}
                 >
                   <option value={5}>Every 5 minutes</option>
                   <option value={10}>Every 10 minutes</option>
                   <option value={30}>Every 30 minutes</option>
                   <option value={60}>Every 60 minutes</option>
                 </select>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-1 text-xs text-muted">
                   How often the extension checks Linkwarden in the background to keep the
                   "already saved" badge accurate without opening the popup. Lower is fresher but
                   adds more background load on your Linkwarden server.
@@ -301,8 +290,7 @@ const Options = () => {
             <div className="flex space-x-4 pt-4">
               <button
                 type="submit"
-                className={`flex-1 flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm
-                  font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 bg-blue-600 hover:bg-blue-700 focus:ring-blue-500`}
+                className="flex-1 flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-content focus:outline-none focus:ring-2 focus:ring-offset-2 bg-primary hover:bg-primary-hover focus:ring-primary"
               >
                 <Save className="mr-2 h-4 w-4" />
                 Save
@@ -310,8 +298,7 @@ const Options = () => {
               <button
                 type="button"
                 onClick={handleRefresh}
-                className={`flex-1 flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm
-                  font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 bg-green-600 hover:bg-green-700 focus:ring-green-500`}
+                className="flex-1 flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-content focus:outline-none focus:ring-2 focus:ring-offset-2 bg-success hover:bg-success-hover focus:ring-success"
               >
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Refresh Data
@@ -321,7 +308,7 @@ const Options = () => {
               <button
                 type="button"
                 onClick={openShortcutSettings}
-                className="inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline focus:outline-none"
+                className="inline-flex items-center text-sm text-primary hover:underline focus:outline-none"
               >
                 <Keyboard className="mr-1 h-4 w-4" />
                 Customize keyboard shortcut
@@ -331,7 +318,9 @@ const Options = () => {
           {status.text && (
             <div
               className={`mt-6 p-3 rounded-md text-center text-sm ${
-                status.isError ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                status.isError
+                  ? 'bg-danger-soft text-danger-soft-content'
+                  : 'bg-info-soft text-info-soft-content'
               }`}
             >
               {status.text}

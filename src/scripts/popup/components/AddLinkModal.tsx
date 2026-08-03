@@ -35,10 +35,8 @@ export const AddLinkModal = ({
 
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-1">
-      <div
-        className={`rounded-lg w-full max-w-md bg-white text-black dark:bg-gray-800 dark:text-white`}
-      >
+    <div className="fixed inset-0 bg-overlay-scrim flex items-center justify-center p-1">
+      <div className="rounded-lg w-full max-w-md bg-surface text-base-content">
         <form onSubmit={saveNewLink} onKeyDown={preventEnterSubmitFromOpenSelect} className="p-1">
           <div className="space-y-4">
             <div>
@@ -53,8 +51,7 @@ export const AddLinkModal = ({
                 value={newLink.url}
                 onChange={handleNewLinkChange}
                 required
-                className={`w-full px-1 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs
-                  bg-white border-gray-300 text-black dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
+                className="w-full px-1 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary text-xs bg-surface border-border text-base-content"
                 placeholder="https://example.com"
               />
             </div>
@@ -69,8 +66,7 @@ export const AddLinkModal = ({
                 maxLength={2048}
                 value={newLink.title}
                 onChange={handleNewLinkChange}
-                className={`w-full px-1 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs
-                  bg-white border-gray-300 text-black dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
+                className="w-full px-1 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary text-xs bg-surface border-border text-base-content"
                 placeholder="Link Title"
               />
             </div>
@@ -99,7 +95,7 @@ export const AddLinkModal = ({
             />
             <div>
               <label htmlFor="description" className="block text-xs font-medium mb-1">
-                Notes <span className="font-normal text-gray-400">(optional)</span>
+                Notes <span className="font-normal text-muted">(optional)</span>
               </label>
               <textarea
                 id="description"
@@ -108,8 +104,7 @@ export const AddLinkModal = ({
                 value={newLink.description || ''}
                 onChange={handleNewLinkChange}
                 rows={3}
-                className={`w-full px-1 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs
-                  bg-white border-gray-300 text-black dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-y`}
+                className="w-full px-1 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary text-xs bg-surface border-border text-base-content resize-y"
                 placeholder="Optional notes about this link..."
               />
             </div>
@@ -118,15 +113,13 @@ export const AddLinkModal = ({
             <button
               type="button"
               onClick={closeAddLinkModal}
-              className={`px-1 py-1 border rounded-md text-sm font-medium border-gray-300 text-gray-700 hover:bg-gray-50
-                dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+              className="px-1 py-1 border rounded-md text-sm font-medium border-border text-base-content hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className={`px-1 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white
-                bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+              className="px-1 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-content bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             >
               Save
             </button>

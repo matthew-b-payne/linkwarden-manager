@@ -76,7 +76,11 @@ export const FolderSelect = ({
       {allowCreate && onCreateFolder ? (
         <CreatableSelect
           {...commonProps}
-          formatCreateLabel={(inputValue: string) => `Create "${inputValue}"`}
+          formatCreateLabel={(inputValue: string) =>
+            inputValue.includes('/')
+              ? `Create path "${inputValue.trim()}"`
+              : `Create "${inputValue}"`
+          }
           onCreateOption={onCreateFolder}
           isValidNewOption={(inputValue) => inputValue.trim().length > 0}
         />

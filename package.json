@@ -1,7 +1,7 @@
 {
-    "name": "manage-linkwarden-bookmarks",
-    "longName": "Manage LinkWarden Bookmarks",
-    "description": "Manage Linkwarden Bookmarks",
+    "name": "linkwarden-manager",
+    "longName": "Linkwarden Manager (Unofficial)",
+    "description": "Browse and manage your Linkwarden library from the browser. Unofficial — not affiliated with Linkwarden.",
     "version": "1.0.5",
     "main": "index.js",
     "scripts": {
@@ -19,9 +19,6 @@
     "license": "ISC",
     "type": "module",
     "devDependencies": {
-        "@emotion/react": "^11.14.0",
-        "@emotion/styled": "^11.14.0",
-        "@mui/material": "^9.2.0",
         "@phosphor-icons/react": "^2.1.10",
         "@tailwindcss/postcss": "^4.1.8",
         "@types/chrome": "^0.2.2",

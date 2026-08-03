@@ -1,32 +1,106 @@
 @import "tailwindcss";
 
+/* Linkwarden-aligned semantic tokens (light defaults). */
+:root {
+  --lw-primary: #0369a1;
+  --lw-primary-hover: #075985;
+  --lw-primary-content: #ffffff;
+  --lw-base-100: #ffffff;
+  --lw-base-200: #f3f4f6;
+  --lw-base-300: #e5e7eb;
+  --lw-base-content: #0a0a0a;
+  --lw-muted: #6b7280;
+  --lw-surface: #ffffff;
+  --lw-surface-hover: #e5e7eb;
+  --lw-border: #d1d5db;
+  --lw-danger: #dc2626;
+  --lw-danger-hover: #b91c1c;
+  --lw-danger-soft: #fee2e2;
+  --lw-danger-soft-content: #991b1b;
+  --lw-success: #16a34a;
+  --lw-success-hover: #15803d;
+  --lw-info-soft: #e0f2fe;
+  --lw-info-soft-content: #075985;
+  --lw-overlay-scrim: rgb(0 0 0 / 0.5);
+  --lw-loader: #9ca3af;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --lw-primary: #7dd3fc;
+    --lw-primary-hover: #38bdf8;
+    --lw-primary-content: #000000;
+    --lw-base-100: #171717;
+    --lw-base-200: #262626;
+    --lw-base-300: #404040;
+    --lw-base-content: #fafafa;
+    --lw-muted: #9ca3af;
+    --lw-surface: #262626;
+    --lw-surface-hover: #404040;
+    --lw-border: #404040;
+    --lw-danger: #f1293c;
+    --lw-danger-hover: #ef4444;
+    --lw-danger-soft: #450a0a;
+    --lw-danger-soft-content: #fecaca;
+    --lw-success: #00b17d;
+    --lw-success-hover: #059669;
+    --lw-info-soft: #0c4a6e;
+    --lw-info-soft-content: #bae6fd;
+    --lw-overlay-scrim: rgb(0 0 0 / 0.5);
+    --lw-loader: #9ca3af;
+  }
+}
+
+@theme inline {
+  --color-primary: var(--lw-primary);
+  --color-primary-hover: var(--lw-primary-hover);
+  --color-primary-content: var(--lw-primary-content);
+  --color-base-100: var(--lw-base-100);
+  --color-base-200: var(--lw-base-200);
+  --color-base-300: var(--lw-base-300);
+  --color-base-content: var(--lw-base-content);
+  --color-muted: var(--lw-muted);
+  --color-surface: var(--lw-surface);
+  --color-surface-hover: var(--lw-surface-hover);
+  --color-border: var(--lw-border);
+  --color-danger: var(--lw-danger);
+  --color-danger-hover: var(--lw-danger-hover);
+  --color-danger-soft: var(--lw-danger-soft);
+  --color-danger-soft-content: var(--lw-danger-soft-content);
+  --color-success: var(--lw-success);
+  --color-success-hover: var(--lw-success-hover);
+  --color-info-soft: var(--lw-info-soft);
+  --color-info-soft-content: var(--lw-info-soft-content);
+  --color-overlay-scrim: var(--lw-overlay-scrim);
+  --color-loader: var(--lw-loader);
+}
 
 .custom-react-select-container .custom-react-select__control {
-  @apply bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500;
+  @apply bg-surface border-border hover:border-muted;
 }
 
 .custom-react-select-container .custom-react-select__menu {
-  @apply bg-white dark:bg-gray-700 text-black dark:text-white text-sm;
+  @apply bg-surface text-base-content text-sm;
 }
 
 .custom-react-select-container .custom-react-select__input {
-  @apply bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600;
+  @apply bg-surface border-border;
 }
 
 .custom-react-select-container .custom-react-select__option {
-  @apply text-black text-xs dark:text-white bg-white dark:bg-gray-700;
+  @apply text-base-content text-xs bg-surface;
 }
 
 .custom-react-select-container .custom-react-select__option--is-focused {
-  @apply bg-gray-300 dark:bg-gray-800;
+  @apply bg-surface-hover;
 }
 
 .custom-react-select-container .custom-react-select__input-container {
-  @apply text-black dark:text-white;
+  @apply text-base-content;
 }
 
 .custom-react-select-container .custom-react-select__single-value {
-  @apply text-black dark:text-white text-xs;
+  @apply text-base-content text-xs;
 }
 
 .custom-react-select-container .custom-react-select__value-container {
@@ -34,19 +108,19 @@
 }
 
 .custom-react-select-container .custom-react-select__multi-value {
-  @apply bg-gray-200 dark:bg-gray-800 border-gray-300 dark:border-gray-600;
+  @apply bg-base-200 border-border;
 }
 
 .custom-react-select-container .custom-react-select__multi-value__label {
-  @apply text-black dark:text-white text-xs;
+  @apply text-base-content text-xs;
 }
 
 .custom-react-select-container .custom-react-select__multi-value__remove {
-  @apply hover:bg-gray-300 dark:hover:bg-gray-900;
+  @apply hover:bg-base-300;
 }
 
 .custom-react-select-container .custom-react-select__dropdown-indicator,
 .custom-react-select-container .custom-react-select__clear-indicator,
 .custom-react-select-container .custom-react-select__placeholder {
-  @apply text-black dark:text-white;
+  @apply text-base-content;
 }

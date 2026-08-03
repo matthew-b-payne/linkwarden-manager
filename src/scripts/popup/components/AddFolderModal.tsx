@@ -42,10 +42,8 @@ export const AddFolderModal = ({
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-1">
-      <div
-        className={'rounded-lg w-full max-w-md bg-white text-black dark:bg-gray-800 dark:text-white'}
-      >
+    <div className="fixed inset-0 bg-overlay-scrim flex items-center justify-center p-1">
+      <div className="rounded-lg w-full max-w-md bg-surface text-base-content">
         <form onSubmit={saveNewFolder} onKeyDown={preventEnterSubmitFromOpenSelect} className="p-1">
           <div className="space-y-4">
             <div>
@@ -60,10 +58,13 @@ export const AddFolderModal = ({
                 maxLength={2048}
                 value={newFolder.name}
                 onChange={handleNewFolderChange}
-                className={`w-full px-1 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs
-                  bg-white border-gray-300 text-black dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
-                placeholder="Folder Name"
+                className="w-full px-1 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary text-xs bg-surface border-border text-base-content"
+                placeholder="Name or path (AI/analysis)"
               />
+              <p className="mt-1 text-[11px] text-muted">
+                Use <span className="font-mono">/</span> to nest under an existing folder
+                (e.g. <span className="font-mono">AI/analysis</span>).
+              </p>
             </div>
             {sortedFolders.length > 0 && (
               <FolderSelect
@@ -83,15 +84,13 @@ export const AddFolderModal = ({
             <button
               type="button"
               onClick={closeAddFolderModal}
-              className={`px-1 py-1 border rounded-md text-sm font-medium border-gray-300 text-gray-700 hover:bg-gray-50
-                dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+              className="px-1 py-1 border rounded-md text-sm font-medium border-border text-base-content hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className={`px-1 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white
-                bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+              className="px-1 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-content bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             >
               Save
             </button>

@@ -61,8 +61,8 @@ export const SaveSessionModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-1">
-      <div className="rounded-lg w-full max-w-md bg-white text-black dark:bg-gray-800 dark:text-white">
+    <div className="fixed inset-0 bg-overlay-scrim flex items-center justify-center p-1">
+      <div className="rounded-lg w-full max-w-md bg-surface text-base-content">
         <form onSubmit={handleSubmit} onKeyDown={preventEnterSubmitFromOpenSelect} className="p-3">
           <h2 className="text-sm font-semibold mb-3">Save all tabs ({tabs.length})</h2>
 
@@ -72,13 +72,13 @@ export const SaveSessionModal = ({
                 <div className="text-sm">
                   Saved {result.data.saved} of {tabs.length} tab{tabs.length === 1 ? '' : 's'}.
                   {result.data.failed > 0 && (
-                    <div className="mt-1 text-xs text-red-600 dark:text-red-400">
+                    <div className="mt-1 text-xs text-danger">
                       {result.data.failed} failed to save.
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="text-sm text-red-600 dark:text-red-400 break-words">
+                <div className="text-sm text-danger break-words">
                   Error saving session: {(result && String(result.data)) || 'no response from the extension background'}.
                 </div>
               )}
@@ -86,7 +86,7 @@ export const SaveSessionModal = ({
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-content bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                 >
                   Done
                 </button>
@@ -111,7 +111,7 @@ export const SaveSessionModal = ({
                       maxLength={2048}
                       onChange={(e) => setSessionName(e.target.value)}
                       onFocus={() => setDestinationType('new')}
-                      className="mt-1 w-full px-1 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs bg-white border-gray-300 text-black dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="mt-1 w-full px-1 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary text-xs bg-surface border-border text-base-content"
                       placeholder="Session name"
                     />
                     <label className="mt-2 flex items-center space-x-2 text-xs">
@@ -140,7 +140,7 @@ export const SaveSessionModal = ({
                         value={existingCollectionId}
                         onChange={(e) => setExistingCollectionId(+e.target.value)}
                         onFocus={() => setDestinationType('existing')}
-                        className="mt-1 w-full px-1 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs bg-white border-gray-300 text-black dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="mt-1 w-full px-1 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary text-xs bg-surface border-border text-base-content"
                       >
                         {sortedFolders.map((folder) => (
                           <option key={folder.id} value={folder.id}>
@@ -156,7 +156,7 @@ export const SaveSessionModal = ({
               <TagSelect allTags={allTags} selected={tags} onChange={setTags} />
 
               <div className="h-[4px] flex justify-center">
-                <BarLoader width={'100%'} loading={status === 'saving'} color={'#9d9d9d'} />
+                <BarLoader width={'100%'} loading={status === 'saving'} color={'var(--lw-loader)'} />
               </div>
 
               <div className="flex justify-end space-x-3">
@@ -164,14 +164,14 @@ export const SaveSessionModal = ({
                   type="button"
                   onClick={closeModal}
                   disabled={status === 'saving'}
-                  className="px-3 py-1 border rounded-md text-sm font-medium border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="px-3 py-1 border rounded-md text-sm font-medium border-border text-base-content hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!canSave || status === 'saving'}
-                  className="px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-content bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
                 >
                   {status === 'saving' ? 'Saving…' : 'Save'}
                 </button>

@@ -63,10 +63,10 @@ export const FolderItem = ({
   return (
     <div className="mb-2">
       <div
-        className={'flex items-center p-2 rounded-md cursor-pointer relative group transition-colors duration-200 bg-white hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700'}
+        className="flex items-center p-2 rounded-md cursor-pointer relative group transition-colors duration-200 bg-surface hover:bg-surface-hover"
         onClick={() => toggleFolder(folder.id)}
         style={{
-          backgroundImage: `linear-gradient(to right, ${folder.color}20 0%, #FFFFFF00 25%)`,
+          backgroundImage: `linear-gradient(to right, ${folder.color}20 0%, transparent 25%)`,
         }}
       >
         {folder.icon && (
@@ -85,13 +85,13 @@ export const FolderItem = ({
         <span className="flex-grow text-sm truncate">{folder.name}</span>
         <ChevronRight
           size={20}
-          className={`text-gray-400 transform transition-transform ${isOpen ? 'rotate-90' : ''}`}
+          className={`text-muted transform transition-transform ${isOpen ? 'rotate-90' : ''}`}
         />
         {canShowOverlayButtons && (
           <div className='absolute top-0 right-[20px] z-10 h-full flex mr-4'>
             <div className='m-auto space-x-2'>
               <button
-                className={'text-gray-400 bg-gray-200/90 dark:bg-gray-700/90 hover:text-green-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200'}
+                className="text-muted bg-base-300/90 hover:text-success opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                 title="Open all links in a new window"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -101,7 +101,7 @@ export const FolderItem = ({
                 <FolderOutput size={20} />
               </button>
               <button
-                className={'text-gray-400 bg-gray-200/90 dark:bg-gray-700/90 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200'}
+                className="text-muted bg-base-300/90 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                 title="Edit folder"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -111,7 +111,7 @@ export const FolderItem = ({
                 <Edit3 size={20} />
               </button>
               <button
-                className={'text-gray-400 bg-gray-200/90 dark:bg-gray-700/90 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200'}
+                className="text-muted bg-base-300/90 hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                 title="Delete folder"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -125,7 +125,7 @@ export const FolderItem = ({
         )}
         {showConfirmOpenAll && (
           <div
-            className={'absolute inset-0 z-20 flex items-center justify-center bg-white/95 dark:bg-gray-800/95 rounded-md'}
+            className="absolute inset-0 z-20 flex items-center justify-center bg-surface/95 rounded-md"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="text-center text-xs">
@@ -136,7 +136,7 @@ export const FolderItem = ({
                   openAllInFolder(folder.id);
                   setShowConfirmOpenAll(false);
                 }}
-                className="px-2 py-1 bg-blue-500 text-white rounded-md mr-2 hover:bg-blue-600"
+                className="px-2 py-1 bg-primary text-primary-content rounded-md mr-2 hover:bg-primary-hover"
               >
                 Open
               </button>
@@ -145,7 +145,7 @@ export const FolderItem = ({
                   e.stopPropagation();
                   setShowConfirmOpenAll(false);
                 }}
-                className={'px-2 py-1 rounded-md bg-gray-300 text-gray-700 hover:bg-gray-400 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'}
+                className="px-2 py-1 rounded-md bg-base-300 text-base-content hover:bg-surface-hover"
               >
                 Cancel
               </button>

@@ -12,6 +12,23 @@ function errorToMessage(error: unknown): string {
   }
 }
 
+function readCreatedFolderId(data: unknown): number | null {
+  if (typeof data === 'number' && Number.isFinite(data)) {
+    return data;
+  }
+  if (data && typeof data === 'object' && 'id' in data) {
+    const id = data.id;
+    if (typeof id === 'number' && Number.isFinite(id)) {
+      return id;
+    }
+    if (typeof id === 'string' && id.trim() !== '') {
+      const n = Number(id);
+      return Number.isFinite(n) ? n : null;
+    }
+  }
+  return null;
+}
+
 interface FetchFolderInfo {
   id: number;
   name: string;
@@ -297,22 +314,33 @@ export class LinkwardenService implements BookmarkManagerService {
   }
 
 
-  // returns the id of a root collection with the given name, creating it if it doesn't exist
+  // returns the id of a collection with the given name under parentId, creating it if missing
   async _findOrCreateFolder(name: string, parentId: number): Promise<ApiReturnType<number>> {
     const folders = await this.fetchFolders();
     if (!folders.success) {
-      return { success: false, data: folders.data as any };
+      return { success: false, data: typeof folders.data === 'string' ? folders.data : 'Failed to fetch folders' };
     }
-    const existing = folders.data.find((f) => f.name === name && (f.parentId ?? 0) === parentId);
+    const existing = folders.data.find(
+      (f) =>
+        f.name.localeCompare(name, undefined, { sensitivity: 'accent' }) === 0 &&
+        (f.parentId ?? 0) === parentId,
+    );
     if (existing) {
       return { success: true, data: existing.id };
     }
-    const created = await this.createFolder(name, parentId);
+    // Single segment only — path create goes through createFolder publicly.
+    const created = await this._createFolderSegment(name, parentId);
     if (!created.success) {
-      return { success: false, data: created.data };
+      return { success: false, data: typeof created.data === 'string' ? created.data : 'Failed to create folder' };
     }
-    return { success: true, data: created.data.id };
+    const createdId = readCreatedFolderId(created.data);
+    if (createdId == null) {
+      return { success: false, data: 'Created folder but could not read its id' };
+    }
+    return { success: true, data: createdId };
   }
+
+
 
   async saveSession(req: SaveSessionRequest): Promise<ApiReturnType<SaveSessionResult>> {
     try {
@@ -333,7 +361,11 @@ export class LinkwardenService implements BookmarkManagerService {
         if (!created.success) {
           throw 'Could not create session folder: ' + created.data;
         }
-        collectionId = created.data.id;
+        const createdId = readCreatedFolderId(created.data);
+        if (createdId == null) {
+          throw 'Could not create session folder: missing id';
+        }
+        collectionId = createdId;
       }
 
       // 2. create the links one at a time. Sequential (not parallel) is deliberate:
@@ -459,23 +491,24 @@ export class LinkwardenService implements BookmarkManagerService {
     }
   }
 
-  async createFolder(
+  /** Single-segment POST — does not interpret `/` in the name. */
+  async _createFolderSegment(
     name: string,
-    parentId: number
-  ): Promise<ApiReturnType<any>> {
+    parentId: number,
+  ): Promise<ApiReturnType<unknown>> {
     try {
-      const request: CreateFolderRequest = {name: name, parentId: +parentId};
+      const request: CreateFolderRequest = { name: name, parentId: +parentId };
       const response = await fetch(`${this.host}/api/v1/collections`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${this.token}`,
           'Content-Type': 'application/json',
         },
-        credentials: "omit",
+        credentials: 'omit',
         body: JSON.stringify(request),
       });
       const data = await response.json();
-      if(response.status !== 200) {
+      if (response.status !== 200) {
         throw 'Could not create folder: ' + data.response;
       }
       return { success: true, data: data.response };
@@ -484,6 +517,85 @@ export class LinkwardenService implements BookmarkManagerService {
       return { success: false, data: errorToMessage(error) };
     }
   }
+
+  /**
+   * Create a folder. Names containing `/` are a path relative to parentId:
+   * each segment is find-or-created under the previous (e.g. "AI/analysis" under root
+   * nests analysis inside an existing AI folder instead of a literal "AI/analysis").
+   */
+  async createFolder(
+    name: string,
+    parentId: number,
+  ): Promise<ApiReturnType<unknown>> {
+    const segments = name
+      .split('/')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (segments.length === 0) {
+      return { success: false, data: 'Folder name is empty' };
+    }
+
+    // Single segment: always create (historical behavior; no silent reuse).
+    if (segments.length === 1) {
+      return this._createFolderSegment(segments[0], parentId);
+    }
+
+    try {
+      const foldersResult = await this.fetchFolders();
+      if (!foldersResult.success) {
+        return {
+          success: false,
+          data: typeof foldersResult.data === 'string' ? foldersResult.data : 'Failed to fetch folders',
+        };
+      }
+
+      // Local working copy so each created segment is visible to later lookups without refetch.
+      const folders: Folder[] = [...foldersResult.data];
+      let currentParentId = +parentId || 0;
+      let lastCreated: unknown = null;
+
+      for (const segment of segments) {
+        const existing = folders.find(
+          (f) =>
+            f.name.localeCompare(segment, undefined, { sensitivity: 'accent' }) === 0 &&
+            (f.parentId ?? 0) === currentParentId,
+        );
+        if (existing) {
+          currentParentId = existing.id;
+          lastCreated = existing;
+          continue;
+        }
+
+        const created = await this._createFolderSegment(segment, currentParentId);
+        if (!created.success) {
+          return created;
+        }
+
+        const createdId = readCreatedFolderId(created.data);
+        if (createdId == null) {
+          return { success: false, data: 'Created folder but could not read its id' };
+        }
+
+        folders.push({
+          id: createdId,
+          name: segment,
+          ownerId: 0,
+          parentId: currentParentId || undefined,
+          createdAt: new Date().toISOString(),
+          color: '#0ea5e9',
+        });
+        currentParentId = createdId;
+        lastCreated = created.data;
+      }
+
+      return { success: true, data: lastCreated };
+    } catch (error) {
+      console.error('Error creating folder path: ', error);
+      return { success: false, data: errorToMessage(error) };
+    }
+  }
+
 
   async updateFolder(
     id: number,

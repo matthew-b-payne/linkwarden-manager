@@ -71,9 +71,7 @@ export const LinkItem = ({
   }
 
   return (
-    <div
-      className={'flex flex-col p-2 rounded-md mb-2 relative group bg-white dark:bg-gray-800'}
-    >
+    <div className="flex flex-col p-2 rounded-md mb-2 relative group bg-surface">
       <div className='cursor-pointer' onMouseUp={onMouseUp}>
         <div className="flex items-center text-sm">
           <img src={`https://icons.duckduckgo.com/ip3/${new URL(link.url).hostname}.ico`} width={16} height={16} loading='lazy' className='mr-1' />
@@ -81,7 +79,7 @@ export const LinkItem = ({
             {link.name}
           </div>
         </div>
-        <div className="flex justify-between mt-1 text-xs text-gray-500">
+        <div className="flex justify-between mt-1 text-xs text-muted">
           <span title={link.url} className="truncate max-w-[60%]">{link.url}</span>
           {link.tags && link.tags.length > 0 && (
             <span title={tagsTexts} className="truncate max-w-[40%] text-right">
@@ -89,25 +87,30 @@ export const LinkItem = ({
             </span>
           )}
         </div>
+        {link.description ? (
+          <div title={link.description} className="mt-1 text-xs text-muted line-clamp-2">
+            {link.description}
+          </div>
+        ) : null}
         {showCollectionName && (
-          <div className="text-xs text-gray-400 ">{link.folder.name}</div>
+          <div className="text-xs text-muted">{link.folder.name}</div>
         )}
       </div>
       {showConfirmDelete && (
         <div
-          className={'absolute inset-0 bg-white/90 dark:bg-gray-800/90 flex items-center justify-center'}
+          className="absolute inset-0 bg-surface/90 flex items-center justify-center"
         >
           <div className="text-center text-sm">
             <p className="mb-1">Are you sure you want to delete this link?</p>
             <button
               onClick={confirmDelete}
-              className="px-3 py-1 bg-red-500 text-white rounded-md mr-2 hover:bg-red-600"
+              className="px-3 py-1 bg-danger text-primary-content rounded-md mr-2 hover:bg-danger-hover"
             >
               Delete
             </button>
             <button
               onClick={cancelDelete}
-              className={'px-3 py-1 rounded-md bg-gray-300 text-gray-700 hover:bg-gray-400 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'}
+              className="px-3 py-1 rounded-md bg-base-300 text-base-content hover:bg-surface-hover"
             >
               Cancel
             </button>
@@ -126,14 +129,14 @@ export const LinkItem = ({
               collectionId: link.folder.id,
               tags: link.tags.map((tag) => tag.name),
             })}
-            className={'text-gray-400 bg-white/90 dark:bg-gray-800/90 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200'}
+            className="text-muted bg-surface/90 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-200"
             title="Edit link"
           >
             <Edit3 size={24} />
           </button>
             <button
               onClick={handleDelete}
-              className={'text-gray-400 bg-white/90 dark:bg-gray-800/90 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200'}
+              className="text-muted bg-surface/90 hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity duration-200"
               title="Delete link"
             >
               <Trash2 size={24} />

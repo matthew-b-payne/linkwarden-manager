@@ -1,23 +1,27 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Plus, RefreshCcw, FolderPlus, Settings, SquareStack } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Search, Plus, RefreshCcw, FolderPlus, Settings, SquareStack, Folder as FolderIcon, Tag as TagIcon } from 'lucide-react';
 import { BarLoader } from 'react-spinners';
-import Button from '@mui/material/Button';
 import { AddLinkModal } from './components/AddLinkModal';
 import { FolderStructure } from './components/FolderStructure';
+import { TagStructure } from './components/TagStructure';
 import { SearchResults } from './components/SearchResults';
 import { SaveSessionModal } from './components/SaveSessionModal';
 import { defaultFolderColor, getBrowser, getCurrentTabInfo, getCurrentWindowTabs, getStorageItem, openOptions, setStorageItem } from '../utils/utils';
-import { IconButton } from '@mui/material';
 import { DeleteFolderModal } from './components/DeleteFolderModal';
 import { AddFolderModal } from './components/AddFolderModal';
 import { Folder, Link, LinksByFolder, NewLink, SaveSessionRequest, SaveSessionResult, SessionTab, Tag } from '../utils/interfaces';
 import { ApiReturnType } from '../service-worker/bookmark-manager-service';
+
+type BrowseMode = 'folders' | 'tags';
+
 
 const Popup = () => {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [linksByFolder, setLinksByFolder] = useState<LinksByFolder>({});
   const [openFolders, setOpenFolders] = useState(new Set<number>());
   const [searchQuery, setSearchQuery] = useState('');
+  const [browseMode, setBrowseMode] = useState<BrowseMode>('folders');
+  const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
   const [showEditLinkModal, setShowEditLinkModal] = useState(false);
   const [showAddFolderModal, setShowAddFolderModal] = useState(false);
@@ -101,6 +105,19 @@ const Popup = () => {
       }
     });
     getStorageItem('openNewTab').then(setOpenLinksInNewTab);
+    getStorageItem('browseMode').then((mode) => {
+      if (mode === 'folders' || mode === 'tags') {
+        setBrowseMode(mode);
+        if (mode === 'tags') {
+          getBrowser().runtime.sendMessage({ action: 'fetchTags' }).then((tags: ApiReturnType<Tag[]>) => {
+            if (tags && tags.success && tags.data) {
+              setAllTags(tags.data);
+            }
+          });
+        }
+      }
+    });
+
 
     getStorageItem('linksByFolder').then((linksByFolderTemp) => {
       if(linksByFolderTemp) {
@@ -234,11 +251,62 @@ const Popup = () => {
     (link) =>
       link.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       link.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (link.description &&
+        link.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (link.tags &&
         link.tags.some((tag) =>
           tag.name.toLowerCase().includes(searchQuery.toLowerCase()),
         )),
   );
+
+  const allCachedLinks = useMemo(
+    () => Object.values(linksByFolder).flat(),
+    [linksByFolder],
+  );
+
+  const browseTags = useMemo(() => {
+    if (allTags.length > 0) {
+      return allTags;
+    }
+    // Fallback from cached links when the tag list hasn't been fetched yet
+    const byId = new Map<number, Tag>();
+    allCachedLinks.forEach((link) => {
+      (link.tags || []).forEach((tag) => {
+        if (tag.id && !byId.has(tag.id)) {
+          byId.set(tag.id, tag);
+        }
+      });
+    });
+    return Array.from(byId.values());
+  }, [allTags, allCachedLinks]);
+
+  const linksForSelectedTag = useMemo(() => {
+    if (selectedTagId == null) {
+      return [];
+    }
+    return allCachedLinks.filter(
+      (link) => link.tags && link.tags.some((tag) => tag.id === selectedTagId),
+    );
+  }, [allCachedLinks, selectedTagId]);
+
+  const ensureTagsLoaded = useCallback(() => {
+    getBrowser().runtime.sendMessage({ action: 'fetchTags' }).then((tags: ApiReturnType<Tag[]>) => {
+      if (tags && tags.success && tags.data) {
+        setAllTags(tags.data);
+      }
+    });
+  }, []);
+
+  const switchBrowseMode = useCallback((mode: BrowseMode) => {
+    setBrowseMode(mode);
+    setStorageItem('browseMode', mode);
+    if (mode === 'tags') {
+      ensureTagsLoaded();
+    } else {
+      setSelectedTagId(null);
+    }
+  }, [ensureTagsLoaded]);
+
 
   const closeAddLinkModal = () => {
     setShowAddLinkModal(false);
@@ -321,17 +389,29 @@ const Popup = () => {
     const trimmed = name.trim();
     if (!trimmed) return;
     setIsCreatingFolder(true);
-    // create at root (parentId 0) — keeps UX simple and matches "create here"; if user
-    // needs nested, they can still open the full Add Folder modal via toolbar button.
-    getBrowser().runtime.sendMessage({action: 'createFolder', name: trimmed, parentId: 0}).then((result: ApiReturnType<any>) => {
-      if (result.success && result.data) {
-        const newFolderId = typeof result.data === 'object' ? result.data.id : result.data;
-        // fetch fresh folder list then select the new one
+    // Paths like "AI/analysis" are expanded server-side into nested folders under root.
+    getBrowser().runtime.sendMessage({action: 'createFolder', name: trimmed, parentId: 0}).then((result: ApiReturnType<unknown>) => {
+      if (result.success && result.data != null) {
+        let newFolderId: number | null = null;
+        if (typeof result.data === 'number') {
+          newFolderId = result.data;
+        } else if (typeof result.data === 'object' && result.data && 'id' in result.data) {
+          const rawId = result.data.id;
+          if (typeof rawId === 'number') {
+            newFolderId = rawId;
+          } else if (typeof rawId === 'string') {
+            const n = Number(rawId);
+            newFolderId = Number.isFinite(n) ? n : null;
+          }
+        }
+        // fetch fresh folder list then select the new (leaf) folder
         getBrowser().runtime.sendMessage({action: 'fetchFolders'}).then((foldersResult: ApiReturnType<Folder[]>) => {
           if (foldersResult.success && foldersResult.data) {
             setFolders(foldersResult.data);
             setStorageItem('allFolders', foldersResult.data);
-            setNewLink((prev) => ({ ...prev, collectionId: newFolderId }));
+            if (newFolderId != null) {
+              setNewLink((prev) => ({ ...prev, collectionId: newFolderId }));
+            }
           }
         });
       } else {
@@ -451,7 +531,7 @@ const Popup = () => {
   if(hasValidConfiguration) {
     return (
       <div
-        className={`w-[500px] ${isAnyModalShown ? 'h-[500px]' : ''} p-4 bg-gray-100 text-black dark:bg-gray-900 dark:text-white`}
+        className={`w-[500px] ${isAnyModalShown ? 'h-[500px]' : ''} p-4 bg-base-200 text-base-content`}
       >
         <div className="flex items-center">
           <div className="relative flex-grow">
@@ -460,70 +540,102 @@ const Popup = () => {
               placeholder="Search links..."
               value={searchQuery}
               onChange={handleSearch}
-              className={`w-full pl-10 pr-4 py-2 rounded-md border text-sm bg-white border-gray-300 text-black
-                dark:bg-gray-800 dark:border-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              className="w-full pl-10 pr-4 py-2 rounded-md border text-sm bg-surface border-border text-base-content focus:outline-none focus:ring-2 focus:ring-primary"
             />
             <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted"
               size={20}
             />
           </div>
           <button
             onClick={openAddLinkModal}
             title='Add link'
-            className={`ml-2 p-2 rounded-md bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700
-              text-white focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            className="ml-2 p-2 rounded-md bg-primary hover:bg-primary-hover text-primary-content focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <Plus size={20} />
           </button>
           <button
             onClick={openAddFolderModal}
             title='Add new folder'
-            className={`ml-2 p-2 rounded-md bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700
-              text-white focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            className="ml-2 p-2 rounded-md bg-primary hover:bg-primary-hover text-primary-content focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <FolderPlus size={20} />
           </button>
           <button
             onClick={openSaveSessionModal}
             title='Save all tabs'
-            className={`ml-2 p-2 rounded-md bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700
-              text-white focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            className="ml-2 p-2 rounded-md bg-primary hover:bg-primary-hover text-primary-content focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <SquareStack size={20} />
           </button>
           <button
             onClick={loadAllLinks}
             title='Refresh'
-            className={`ml-2 p-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700
-              focus:outline-none focus:ring-2 focus:ring-gray-500`}
+            className="ml-2 p-2 rounded-md bg-base-300 hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-muted"
           >
             <RefreshCcw size={20} />
           </button>
           <button
             onClick={openOptions}
             title='Open Settings'
-            className={`ml-2 p-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700
-              focus:outline-none focus:ring-2 focus:ring-gray-500`}
+            className="ml-2 p-2 rounded-md bg-base-300 hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-muted"
           >
             <Settings size={20} />
           </button>
-          <IconButton
+          <button
             onClick={openLinkwarden}
             title='Open LinkWarden Dashboard'
-            className={`ml-2 p-2 rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700
-              focus:outline-none focus:ring-2 focus:ring-gray-500`}
+            className="ml-2 p-2 rounded-md bg-base-300 hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-muted"
           >
             <img src='/assets/icon-48.png' width='32' height='32' alt='Open Linkwarden' />
-          </IconButton>
+          </button>
+        </div>
+        <div className="mt-2 flex rounded-md border border-border overflow-hidden text-sm">
+          <button
+            type="button"
+            onClick={() => switchBrowseMode('folders')}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 focus:outline-none ${
+              browseMode === 'folders'
+                ? 'bg-primary text-primary-content'
+                : 'bg-surface text-base-content hover:bg-surface-hover'
+            }`}
+          >
+            <FolderIcon size={16} />
+            Folders
+          </button>
+          <button
+            type="button"
+            onClick={() => switchBrowseMode('tags')}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 focus:outline-none ${
+              browseMode === 'tags'
+                ? 'bg-primary text-primary-content'
+                : 'bg-surface text-base-content hover:bg-surface-hover'
+            }`}
+          >
+            <TagIcon size={16} />
+            Tags
+          </button>
         </div>
         <div className="flex justify-center mb-4 h-[4px]">
-          <BarLoader width={"350px"} loading={isLoading} color={'#9d9d9d'} />
+          <BarLoader width={"350px"} loading={isLoading} color={'var(--lw-loader)'} />
         </div>
         <div className="max-h-96 overflow-y-auto">
           {searchQuery ? (
             <SearchResults
               links={filteredLinks}
+              loadLinksForFolder={loadLinksForFolder}
+              sortLinks={linkSort}
+              showEditLinkModal={openEditLinkModal}
+              canShowOverlayButtons={!isAnyModalShown}
+              openLinksInNewTab={openLinksInNewTab}
+            />
+          ) : browseMode === 'tags' ? (
+            <TagStructure
+              tags={browseTags}
+              allLinks={allCachedLinks}
+              selectedTagId={selectedTagId}
+              onSelectTag={setSelectedTagId}
+              linksForTag={linksForSelectedTag}
               loadLinksForFolder={loadLinksForFolder}
               sortLinks={linkSort}
               showEditLinkModal={openEditLinkModal}
@@ -613,10 +725,16 @@ const Popup = () => {
   }
   else {
     return (
-    <div style={{textAlign:"center"}} className={'w-96 p-4 bg-gray-100 text-black dark:bg-gray-900 dark:text-white'}>
+    <div style={{textAlign:"center"}} className="w-96 p-4 bg-base-200 text-base-content">
       <div style={{fontSize:"16px"}}>Please configure the extension first!</div>
       <br></br>
-      <Button variant="contained" onClick={openOptions}>Open Options</Button>
+      <button
+        type="button"
+        onClick={openOptions}
+        className="px-4 py-2 rounded-md bg-primary hover:bg-primary-hover text-primary-content text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+      >
+        Open Options
+      </button>
     </div>
     );
   }

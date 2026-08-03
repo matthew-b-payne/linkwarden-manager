@@ -97,7 +97,7 @@ const createBaseChromeManifest = async (): Promise<ManifestChrome> => {
       name: pkg.longName ?? pkg.name ?? 'GIVE ME A NAME',
       version: pkg.version,
       description: pkg.description ?? 'GIVE ME A DESCRIPTION',
-      homepage_url: 'https://github.com/Tidone/linkwarden-viewer',
+      homepage_url: 'https://github.com/matthew-b-payne/linkwarden-manager',
       action: {
         default_popup: './src/scripts/popup/popup.html',
       },
@@ -147,7 +147,7 @@ const createBaseFirefoxManifest = async (): Promise<ManifestFirefox> => {
       name: pkg.longName ?? pkg.name ?? 'GIVE ME A NAME',
       version: pkg.version,
       description: pkg.description ?? 'GIVE ME A DESCRIPTION',
-      homepage_url: 'https://github.com/Tidone/linkwarden-viewer',
+      homepage_url: 'https://github.com/matthew-b-payne/linkwarden-manager',
       browser_action: {
         default_popup: './src/scripts/popup/popup.html',
         default_icon: {
