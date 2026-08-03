@@ -122,6 +122,7 @@ export const LinkItem = ({
               id: link.id,
               url: link.url,
               title: link.name,
+              description: link.description || '',
               collectionId: link.folder.id,
               tags: link.tags.map((tag) => tag.name),
             })}

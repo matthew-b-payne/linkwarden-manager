@@ -1,6 +1,8 @@
 import { Folder } from '@/scripts/utils/interfaces';
 import { getFullPathName, getParentFolder } from '@/scripts/utils/utils';
 import React from 'react';
+import { FolderSelect } from './FolderSelect';
+import { preventEnterSubmitFromOpenSelect } from './formKeyboard';
 
 interface Props {
   newFolder: Folder;
@@ -44,7 +46,7 @@ export const AddFolderModal = ({
       <div
         className={'rounded-lg w-full max-w-md bg-white text-black dark:bg-gray-800 dark:text-white'}
       >
-        <form onSubmit={saveNewFolder} className="p-1">
+        <form onSubmit={saveNewFolder} onKeyDown={preventEnterSubmitFromOpenSelect} className="p-1">
           <div className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium mb-1">
@@ -64,31 +66,17 @@ export const AddFolderModal = ({
               />
             </div>
             {sortedFolders.length > 0 && (
-              <div>
-                <label
-                  htmlFor="parentId"
-                  className="block text-sm font-medium mb-1"
-                >
-                  Parent Folder
-                </label>
-                <select
-                  id="parentId"
-                  name="parentId"
-                  value={newFolder.parentId ?? 0}
-                  onChange={handleNewFolderChange}
-                  required
-                  className={`w-full px-1 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs
-                    bg-white border-gray-300 text-black dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
-                >
-                  <option key={0} value={0}></option>
-                  {sortedFolders
-                    .map((folder) => (
-                      <option key={folder.id} value={folder.id}>
-                        {folder.name}
-                      </option>
-                    ))}
-                </select>
-              </div>
+              <FolderSelect
+                id="parentId"
+                label="Parent Folder"
+                folders={sortedFolders}
+                value={newFolder.parentId ?? 0}
+                onChange={(folderId) =>
+                  handleNewFolderChange({
+                    target: { name: 'parentId', value: folderId },
+                  } as unknown as React.ChangeEvent<HTMLSelectElement>)
+                }
+              />
             )}
           </div>
           <div className="mt-1 flex justify-end space-x-3">

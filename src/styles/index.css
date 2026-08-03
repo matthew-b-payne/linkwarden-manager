@@ -25,6 +25,10 @@
   @apply text-black dark:text-white;
 }
 
+.custom-react-select-container .custom-react-select__single-value {
+  @apply text-black dark:text-white text-xs;
+}
+
 .custom-react-select-container .custom-react-select__value-container {
   @apply text-xs;
 }

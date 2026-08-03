@@ -130,3 +130,8 @@ dist
 .pnp.*
 
 extension.zip
+
+# Session handoff - local only
+HANDOVER.md
+HANDOFF.md
+handoff.md

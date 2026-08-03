@@ -38,6 +38,7 @@ interface FetchLinksResponse {
       id: number;
       name: string;
       url: string;
+      description?: string;
       importDate?: string;
       createdAt: string;
       tags: {
@@ -49,6 +50,7 @@ interface FetchLinksResponse {
   };
   response?: string;
 }
+
 
 interface FetchTagsResponse {
   data: {
@@ -63,6 +65,7 @@ interface FetchTagsResponse {
 interface CreateLinkRequest {
   name: string;
   url: string;
+  description?: string;
   type: string;
   collection: {
     id: number;
@@ -74,6 +77,7 @@ interface CreateLinkRequest {
 
 interface UpdateLinkRequest extends Omit<CreateLinkRequest, 'type'> {
   id: number;
+  description?: string;
   collection: {
     id: number;
     ownerId: number;
@@ -167,6 +171,7 @@ export class LinkwardenService implements BookmarkManagerService {
         id: value.id,
         name: value.name,
         url: value.url,
+        description: value.description || '',
         createdAt: value.importDate || value.createdAt, // the importDate is set if an entry is imported into LinkWarden, it is the date when the link was saved the first time
         tags: value.tags.map((tag) => ({id: tag.id, name: tag.name})),
         folder: ({
@@ -179,6 +184,7 @@ export class LinkwardenService implements BookmarkManagerService {
           color: normalizeColor(value.collection.color)
         })
       }));
+
       return {success: true, data: result, additionalData: data.data.nextCursor};
     } catch (error) {
       console.error('Error fetching links: ', error);
@@ -262,7 +268,14 @@ export class LinkwardenService implements BookmarkManagerService {
 
   async saveLink(link: NewLink): Promise<ApiReturnType<any>> {
     try {
-      const request: CreateLinkRequest = {name: link.title, url: link.url, type: "url", collection: {id: +(link.collectionId)}, tags: link.tags.map((value) => ({name: value}))};
+      const request: CreateLinkRequest = {
+        name: link.title,
+        url: link.url,
+        description: link.description?.trim() ? link.description.trim() : undefined,
+        type: "url",
+        collection: {id: +(link.collectionId)},
+        tags: link.tags.map((value) => ({name: value}))
+      };
       const response = await fetch(`${this.host}/api/v1/links`, {
         method: 'POST',
         headers: {
@@ -282,6 +295,7 @@ export class LinkwardenService implements BookmarkManagerService {
       return { success: false, data: errorToMessage(error) };
     }
   }
+
 
   // returns the id of a root collection with the given name, creating it if it doesn't exist
   async _findOrCreateFolder(name: string, parentId: number): Promise<ApiReturnType<number>> {
@@ -379,7 +393,14 @@ export class LinkwardenService implements BookmarkManagerService {
     collectionOwnerId: string
   ): Promise<ApiReturnType<any>> {
     try {
-      const request: UpdateLinkRequest = {id: +(link.id), name: link.title, url: link.url, collection: {id: +(link.collectionId), ownerId: +(collectionOwnerId)}, tags: link.tags.map((value) => ({name: value}))};
+      const request: UpdateLinkRequest = {
+        id: +(link.id),
+        name: link.title,
+        url: link.url,
+        description: link.description?.trim(),
+        collection: {id: +(link.collectionId), ownerId: +(collectionOwnerId)},
+        tags: link.tags.map((value) => ({name: value}))
+      };
       const response = await fetch(`${this.host}/api/v1/links/${link.id}`, {
         method: 'PUT',
         headers: {

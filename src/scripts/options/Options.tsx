@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Save, RefreshCw } from 'lucide-react';
+import { Eye, EyeOff, Save, RefreshCw, Keyboard } from 'lucide-react';
 import { getBrowser, getStorageItem, setStorageItem } from '../utils/utils';
 import { ApiReturnType } from '../service-worker/bookmark-manager-service';
 import { Folder, LinksByFolder } from '../utils/interfaces';
@@ -12,6 +12,8 @@ const Options = () => {
   const [linkSort, setLinkSort] = useState('name_ascending');
   const [folderSort, setFolderSort] = useState('name_ascending');
   const [openLinksInNewTab, setOpenLinksInNewTab] = useState(false);
+  const [savedIndicatorEnabled, setSavedIndicatorEnabled] = useState(true);
+  const [savedIndicatorRefreshMinutes, setSavedIndicatorRefreshMinutes] = useState(10);
 
   useEffect(() => {
     getStorageItem('host').then((value) => {
@@ -37,7 +39,30 @@ const Options = () => {
         setOpenLinksInNewTab(value);
       }
     });
+    // unset (never saved before) should default to enabled, so only overwrite the default
+    // when a value has actually been stored — unlike the booleans above, which default to off
+    getStorageItem('savedIndicatorEnabled').then((value) => {
+      if (value !== undefined) {
+        setSavedIndicatorEnabled(value);
+      }
+    });
+    getStorageItem('savedIndicatorRefreshMinutes').then((value) => {
+      if (value) {
+        setSavedIndicatorRefreshMinutes(value);
+      }
+    });
   }, []);
+
+  const openShortcutSettings = () => {
+    const browserApi = getBrowser();
+    // Firefox exposes a dedicated API for this; Chrome has no equivalent, so fall back to
+    // deep-linking its shortcuts page directly (tabs.create needs no extra permission).
+    if (browserApi.commands?.openShortcutSettings) {
+      browserApi.commands.openShortcutSettings();
+    } else {
+      browserApi.tabs.create({ url: 'chrome://extensions/shortcuts' });
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +75,10 @@ const Options = () => {
       setStorageItem('sortFolders', folderSort))
     .then(() =>
       setStorageItem('openNewTab', openLinksInNewTab))
+    .then(() =>
+      setStorageItem('savedIndicatorEnabled', savedIndicatorEnabled))
+    .then(() =>
+      setStorageItem('savedIndicatorRefreshMinutes', savedIndicatorRefreshMinutes))
     .then(() =>
       getBrowser().runtime.sendMessage({action: 'reload'})
     ).then(() => {
@@ -227,6 +256,48 @@ const Options = () => {
                 Always open Links in new Tabs
               </label>
             </div>
+            <div className='flex space-x-4 pt-4'>
+              <input
+                type='checkbox'
+                id='savedIndicatorEnabled'
+                checked={savedIndicatorEnabled}
+                onChange={(event) => setSavedIndicatorEnabled(event.target.checked)}
+              />
+              <label
+                htmlFor='savedIndicatorEnabled'
+                className={labelClassNames}
+              >
+                Show "already saved" indicator on the toolbar icon
+              </label>
+            </div>
+            {savedIndicatorEnabled && (
+              <div>
+                <label
+                  htmlFor="savedIndicatorRefreshMinutes"
+                  className={labelClassNames}
+                >
+                  Background refresh frequency
+                </label>
+                <select
+                  name="savedIndicatorRefreshMinutes"
+                  id="savedIndicatorRefreshMinutes"
+                  value={savedIndicatorRefreshMinutes}
+                  onChange={(e) => setSavedIndicatorRefreshMinutes(Number(e.target.value))}
+                  className={`w-full px-1 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm
+                    bg-white border-gray-300 text-black dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
+                >
+                  <option value={5}>Every 5 minutes</option>
+                  <option value={10}>Every 10 minutes</option>
+                  <option value={30}>Every 30 minutes</option>
+                  <option value={60}>Every 60 minutes</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  How often the extension checks Linkwarden in the background to keep the
+                  "already saved" badge accurate without opening the popup. Lower is fresher but
+                  adds more background load on your Linkwarden server.
+                </p>
+              </div>
+            )}
             <div className="flex space-x-4 pt-4">
               <button
                 type="submit"
@@ -244,6 +315,16 @@ const Options = () => {
               >
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Refresh Data
+              </button>
+            </div>
+            <div className="text-center pt-1">
+              <button
+                type="button"
+                onClick={openShortcutSettings}
+                className="inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline focus:outline-none"
+              >
+                <Keyboard className="mr-1 h-4 w-4" />
+                Customize keyboard shortcut
               </button>
             </div>
           </form>

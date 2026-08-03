@@ -68,6 +68,18 @@ interface ManifestFirefox {
     persistent: boolean;
     type: string;
   };
+  commands?: {
+    [key: string]: {
+      suggested_key: {
+        default: string;
+        mac?: string;
+        windows?: string;
+        chromeos?: string;
+        linux?: string;
+      };
+      description: string;
+    };
+  };
   browser_specific_settings: {
     gecko: {
       id: string;
@@ -110,6 +122,13 @@ const createBaseChromeManifest = async (): Promise<ManifestChrome> => {
             default: 'Ctrl+Space',
           },
           description: 'Refresh Extension', // https://developer.chrome.com/docs/extensions/reference/commands/
+        },
+        add_current_tab: {
+          suggested_key: {
+            default: 'Ctrl+Shift+S',
+            mac: 'Command+Shift+S',
+          },
+          description: 'Save current tab to Linkwarden',
         },
       },
     };
@@ -155,6 +174,7 @@ const createBaseFirefoxManifest = async (): Promise<ManifestFirefox> => {
       },
       permissions: [
         'storage',
+        'alarms',
         'activeTab',
         'tabs',
         '<all_urls>',
@@ -162,6 +182,15 @@ const createBaseFirefoxManifest = async (): Promise<ManifestFirefox> => {
         'http://*/*',
         'https://*/*'
       ],
+      commands: {
+        add_current_tab: {
+          suggested_key: {
+            default: 'Ctrl+Shift+S',
+            mac: 'Command+Shift+S',
+          },
+          description: 'Save current tab to Linkwarden',
+        },
+      },
       browser_specific_settings: {
         gecko: {
           id: "linkwarden_viewer@tidone",

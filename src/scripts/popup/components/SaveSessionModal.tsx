@@ -3,6 +3,7 @@ import { ApiReturnType } from '@/scripts/service-worker/bookmark-manager-service
 import { getFullPathName } from '@/scripts/utils/utils';
 import React, { useState } from 'react';
 import { BarLoader } from 'react-spinners';
+import { preventEnterSubmitFromOpenSelect } from './formKeyboard';
 import { TagSelect } from './TagSelect';
 
 interface Props {
@@ -62,7 +63,7 @@ export const SaveSessionModal = ({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-1">
       <div className="rounded-lg w-full max-w-md bg-white text-black dark:bg-gray-800 dark:text-white">
-        <form onSubmit={handleSubmit} className="p-3">
+        <form onSubmit={handleSubmit} onKeyDown={preventEnterSubmitFromOpenSelect} className="p-3">
           <h2 className="text-sm font-semibold mb-3">Save all tabs ({tabs.length})</h2>
 
           {status === 'done' ? (

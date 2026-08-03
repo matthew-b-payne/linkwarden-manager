@@ -18,10 +18,33 @@ export async function getCurrentWindowTabs(): Promise<TabInfo[]> {
     .map((tab: { url: string; title?: string }) => ({ url: tab.url, title: tab.title ?? '' }));
 }
 
+// Loose equality for "is this the same bookmark" checks: drops the fragment (never affects
+// what Linkwarden saved) and a single trailing slash, but keeps the query string, since two
+// URLs differing only by query params are usually genuinely different pages.
+export function normalizeUrlForComparison(url: string): string {
+  try {
+    const parsed = new URL(url);
+    parsed.hash = '';
+    if (parsed.pathname.length > 1 && parsed.pathname.endsWith('/')) {
+      parsed.pathname = parsed.pathname.slice(0, -1);
+    }
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
 export function getBrowser() {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   //@ts-ignore
   return typeof browser !== 'undefined' ? browser : chrome;
+}
+
+// chrome.action (MV3) vs browser.browserAction (Firefox MV2) — feature-detect instead
+// of branching on TARGET_BROWSER so this keeps working if either manifest changes.
+export function getActionApi() {
+  const browserApi = getBrowser();
+  return browserApi.action ?? browserApi.browserAction;
 }
 
 export function getChromeStorage() {

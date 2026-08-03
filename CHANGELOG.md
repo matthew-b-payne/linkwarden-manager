@@ -16,6 +16,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   the batch.
 - Restore a session: an "open all links in a new window" action on each folder
   reopens its links as a fresh window (`windows.create`), with a confirmation.
+- Keyboard shortcut (`Ctrl+Shift+S` / `Command+Shift+S`, rebindable via each
+  browser's shortcut settings — linked from the Options page) to save the
+  current tab: opens the popup with the Add Link modal pre-filled with the
+  active tab's URL/title (`action.openPopup()` on Chrome,
+  `browserAction.openPopup()` on Firefox) rather than saving silently, so the
+  folder and tags can still be picked before it's saved.
+- Searchable folder pickers: the parent folder field in Add/Edit Folder and
+  the destination folder field in Add/Edit Link now filter by typing part of
+  a folder's name instead of scrolling a plain dropdown.
+- "Already saved" indicator: the toolbar icon badges (with a tooltip) when the
+  active tab's URL is already saved, without needing to open the popup,
+  matched against the same locally-cached link list the popup uses (no extra
+  API calls). A background refresh (`chrome.alarms`, interval configurable in
+  Options, default 10 minutes) keeps the cache current even if the popup is
+  never opened; the indicator and its refresh frequency can both be turned
+  off in Options.
+- Optional notes (description) field when adding/editing a link: appears after
+  tags in the dialog, saved via the Linkwarden API's `description` field (max
+  2048 chars, trimmed) and preserved on edit; empty omits it from the payload.
 
 ### Changed
 
@@ -29,6 +48,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   per folder in parallel, reducing load on self-hosted Linkwarden instances.
 - The popup's 60s auto-refresh interval now skips ticks while a fetch is
   already in flight or the popup isn't visible.
+- Add/Edit Link's folder picker now shows the link's current folder pinned to
+  the top of the list instead of wherever it falls alphabetically.
 
 ### Fixed
 
@@ -36,6 +57,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   error (e.g. an invalid API token) on failure, because the cursor-paginated
   `/api/v1/search` and `/api/v1/tags` error paths read the wrong response
   field (`data.data` instead of `data.response`).
+- The folder picker's currently-selected value had no dark-mode text color
+  rule (`react-select`'s `__single-value` part was never styled, since the
+  only prior `react-select` usage was multi-select), rendering it almost
+  invisible against the dark theme.
+- Selecting a folder in Add/Edit Link or Add/Edit Folder (by click or by
+  filtering and pressing Enter) could visibly show the wrong folder — always
+  falling back to whichever sorted first alphabetically — because the
+  selected id was stored as a string while the picker's options compared it
+  against a number, so the equality check never matched.
+- Filtering a folder/tag picker and pressing Enter before it had settled on a
+  highlighted option could submit the whole form early with the stale
+  pre-selection value, because `react-select` doesn't call
+  `preventDefault()` on Enter when no option is focused yet, letting the
+  keypress fall through to the browser's native "submit the enclosing form"
+  behavior.
 
 ## [1.0.5] - 2026-05-04
 

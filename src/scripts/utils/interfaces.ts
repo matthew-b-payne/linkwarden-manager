@@ -2,10 +2,12 @@ export interface Link {
     id: number;
     name: string;
     url: string;
+    description?: string;
     createdAt: string;
     tags: Tag[];
     folder: Folder;
 }
+
 
 export interface LinksByFolder {
     [key: string]: Link[];
@@ -31,10 +33,10 @@ export interface NewLink {
     id: number;
     url: string;
     title: string;
+    description?: string;
     collectionId: number;
     tags: string[];
 }
-
 export interface SessionTab {
     url: string;
     title: string;

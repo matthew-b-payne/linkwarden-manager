@@ -36,9 +36,11 @@ const Popup = () => {
     id: 0,
     url: '',
     title: '',
+    description: '',
     collectionId: 0,
     tags: [],
   });
+
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [hasValidConfiguration, setHasValidConfiguration] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -144,6 +146,7 @@ const Popup = () => {
       setNewLink({
         url: tabinfo.url,
         title: tabinfo.title || '',
+        description: '',
         collectionId: unorganized ? unorganized.id : folders[0]?.id ?? 0,
         tags: [],
         id: 0,
@@ -158,6 +161,16 @@ const Popup = () => {
     });
   }, [folders]);
 
+  useEffect(() => {
+    // set by the add_current_tab keyboard shortcut before it force-opens this popup —
+    // consume it once so a plain click on the toolbar icon never re-triggers the modal
+    getStorageItem('pendingAddLink').then((pending) => {
+      if (pending) {
+        setStorageItem('pendingAddLink', false);
+        openAddLinkModal();
+      }
+    });
+  }, [openAddLinkModal]);
   const openAddFolderModal = useCallback(() => {
     setNewFolder({
       id: 0,
@@ -248,10 +261,11 @@ const Popup = () => {
   };
 
   const handleNewLinkChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
     setNewLink({ ...newLink, [e.target.name]: e.target.value });
   };
+
 
   const handleNewFolderChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
