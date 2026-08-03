@@ -35,6 +35,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Optional notes (description) field when adding/editing a link: appears after
   tags in the dialog, saved via the Linkwarden API's `description` field (max
   2048 chars, trimmed) and preserved on edit; empty omits it from the payload.
+- Create a new folder directly from the Add/Edit Link dialog: type a name that
+  doesn't exist in the folder picker and select "Create "name"" — the folder
+  is created at root and immediately selected, so the link can be saved
+  without first opening the Add Folder flow.
 
 ### Changed
 
@@ -50,6 +54,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   already in flight or the popup isn't visible.
 - Add/Edit Link's folder picker now shows the link's current folder pinned to
   the top of the list instead of wherever it falls alphabetically.
+- Add/Edit Link folder picker uses CreatableSelect when a new folder name is
+  typed, showing an inline "Create" action.
 
 ### Fixed
 

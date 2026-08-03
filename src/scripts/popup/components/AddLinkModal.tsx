@@ -13,7 +13,10 @@ interface Props {
   handleTagChange: (e: string[]) => void;
   saveNewLink: (e: React.FormEvent) => void;
   closeAddLinkModal: () => void;
+  onCreateFolder?: (name: string) => void;
+  isCreatingFolder?: boolean;
 }
+
 
 export const AddLinkModal = ({
   newLink,
@@ -23,10 +26,13 @@ export const AddLinkModal = ({
   handleTagChange,
   saveNewLink,
   closeAddLinkModal,
+  onCreateFolder,
+  isCreatingFolder,
 }: Props) => {
   const sortedFolders: Folder[] = allFolders
     .map((folder) => ({...folder, name: getFullPathName(allFolders, folder)}))
     .sort((a, b) => a.name.localeCompare(b.name));
+
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-1">
@@ -76,6 +82,9 @@ export const AddLinkModal = ({
                 value={newLink.collectionId}
                 includeRootOption={false}
                 pinCurrentToTop
+                allowCreate={!!onCreateFolder}
+                isDisabled={!!isCreatingFolder}
+                onCreateFolder={onCreateFolder}
                 onChange={(folderId) =>
                   handleNewLinkChange({
                     target: { name: 'collectionId', value: folderId },

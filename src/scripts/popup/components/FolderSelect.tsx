@@ -1,5 +1,6 @@
 import React from 'react';
 import Select, { SingleValue } from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 
 interface FolderOption {
   value: number;
@@ -10,6 +11,7 @@ interface Props {
   folders: Array<{ id: number; name: string }>;
   value: number;
   onChange: (folderId: number) => void;
+  onCreateFolder?: (name: string) => void;
   id?: string;
   label?: string;
   rootLabel?: string;
@@ -20,19 +22,26 @@ interface Props {
   // alphabetically — e.g. editing a link should show its current folder first, not buried in
   // the list, since that's the one you're most likely to keep or want to see at a glance.
   pinCurrentToTop?: boolean;
+  allowCreate?: boolean;
+  isDisabled?: boolean;
 }
 
 // Searchable single-select for picking a folder, e.g. by typing part of its name, instead of
 // scrolling a plain <select> — matters once someone has more than a handful of collections.
+// When allowCreate is true, typing a name that doesn't exist shows "Create \"name\"" and calls
+// onCreateFolder, so a link can be saved to a brand-new collection without opening a second modal.
 export const FolderSelect = ({
   folders,
   value,
   onChange,
+  onCreateFolder,
   id = 'parentId',
   label = 'Parent Folder',
   rootLabel = '— No parent (root) —',
   includeRootOption = true,
   pinCurrentToTop = false,
+  allowCreate = false,
+  isDisabled = false,
 }: Props) => {
   const folderOptions = folders.map((folder) => ({ value: folder.id, label: folder.name }));
   if (pinCurrentToTop) {
@@ -47,21 +56,33 @@ export const FolderSelect = ({
     : folderOptions;
   const selected = options.find((option) => option.value === value) ?? options[0];
 
+  const commonProps = {
+    inputId: id,
+    name: id,
+    options,
+    value: selected,
+    maxMenuHeight: 120,
+    isDisabled,
+    onChange: (option: SingleValue<FolderOption>) => onChange(option ? option.value : 0),
+    className: "custom-react-select-container",
+    classNamePrefix: "custom-react-select",
+  };
+
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium mb-1">
         {label}
       </label>
-      <Select
-        inputId={id}
-        name={id}
-        options={options}
-        value={selected}
-        maxMenuHeight={120}
-        onChange={(option: SingleValue<FolderOption>) => onChange(option ? option.value : 0)}
-        className="custom-react-select-container"
-        classNamePrefix="custom-react-select"
-      />
+      {allowCreate && onCreateFolder ? (
+        <CreatableSelect
+          {...commonProps}
+          formatCreateLabel={(inputValue: string) => `Create "${inputValue}"`}
+          onCreateOption={onCreateFolder}
+          isValidNewOption={(inputValue) => inputValue.trim().length > 0}
+        />
+      ) : (
+        <Select {...commonProps} />
+      )}
     </div>
   );
 };
