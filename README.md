@@ -33,6 +33,31 @@ Use them together if you want. Use this alone if you live in the toolbar.
 | “Already saved” toolbar badge | — | **Yes** (background refresh) |
 | Works with self-hosted + cloud | Yes | **Yes** |
 
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/folders.png" alt="Folder tree in the popup" width="48%" />
+  <img src="docs/tags.png" alt="Tag browse grid with counts" width="48%" />
+</p>
+
+<p align="center">
+  <img src="docs/add-link.png" alt="Add bookmark dialog" width="48%" />
+  <img src="docs/session.png" alt="Save all tabs session dialog" width="48%" />
+</p>
+
+<p align="center">
+  <img src="docs/options.png" alt="Options / configuration" width="60%" />
+</p>
+
+| | |
+|---|---|
+| **Folders** | Nested collections, colors/icons, hover actions |
+| **Tags** | Multi-column cards, counts, latest date, filter |
+| **Add link** | URL, title, folder (create inline), tags, notes |
+| **Sessions** | Save every open tab to a new or existing folder |
+| **Options** | Host, API token, sort, badge refresh, shortcut |
+
 ---
 
 ## Features
