@@ -47,7 +47,8 @@ Use them together if you want. Use this alone if you live in the toolbar.
 </p>
 
 <p align="center">
-  <img src="docs/options.png" alt="Options / configuration" width="60%" />
+  <img src="docs/options.png" alt="Options / configuration" width="48%" />
+  <img src="docs/badge.png" alt="Already-saved checkmark on the toolbar icon" width="48%" />
 </p>
 
 | | |
@@ -57,6 +58,7 @@ Use them together if you want. Use this alone if you live in the toolbar.
 | **Add link** | URL, title, folder (create inline), tags, notes |
 | **Sessions** | Save every open tab to a new or existing folder |
 | **Options** | Host, API token, sort, badge refresh, shortcut |
+| **Badge** | Toolbar checkmark when the current page is already saved |
 
 ---
 
