@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Tags browse mode** in the popup: a Folders | Tags segmented control switches
+  the main pane between the collection tree and a multi-column tag card grid
+  (name, latest link date, link count). Click a tag to drill into its links;
+  compact “Filter tags…” supports multi-term OR match (space/comma). Browse mode
+  is persisted in storage.
+- **Path-aware folder create**: names containing `/` (e.g. `AI/analysis`) are
+  split into segments and find-or-created under the chosen parent, so an existing
+  `AI` folder is reused instead of creating a literal `AI/analysis` collection.
+  Hint text in Add Folder; creatable folder picker labels path creates clearly.
 - Save all tabs in the current window as a session: a new toolbar button
   captures every http(s) tab and saves them, optionally into a new collection
   nested under a "Sessions" folder (or an existing folder), with tags applied
@@ -38,10 +47,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Create a new folder directly from the Add/Edit Link dialog: type a name that
   doesn't exist in the folder picker and select "Create "name"" — the folder
   is created at root and immediately selected, so the link can be saved
-  without first opening the Add Folder flow.
+  without first opening the Add Folder flow. Paths with `/` work here too.
+
 
 ### Changed
 
+- **Rebranded** to **Linkwarden Manager (Unofficial)** (`package.json` name/
+  longName/description, Options title, manifest `homepage_url` →
+  [matthew-b-payne/linkwarden-manager](https://github.com/matthew-b-payne/linkwarden-manager)).
+- **Linkwarden-aligned theme tokens**: CSS variables + Tailwind `@theme` for
+  primary/surfaces/muted/danger (sky primary `#0369a1` / `#7dd3fc`, charcoal
+  dark bases). UI components use semantic classes instead of paired
+  `gray-*`/`blue-*` + `dark:` utilities. System light/dark via
+  `prefers-color-scheme`.
+- Removed `@mui/material` / Emotion; unconfigured and toolbar actions use the
+  same Tailwind buttons as the rest of the popup.
+- Folder row color wash fades to `transparent` (was hard-coded white fade,
+  wrong in dark mode).
+- README rewritten with official-extension comparison, feature pitch, install
+  steps, disclaimer, and screenshot gallery (`docs/*.png`).
 - Popup bundle size reduced from ~5MB to ~470KB by lazy-loading phosphor
   folder icons per-name (`import.meta.glob`) instead of importing the entire
   `@phosphor-icons/react` package.
@@ -56,6 +80,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   the top of the list instead of wherever it falls alphabetically.
 - Add/Edit Link folder picker uses CreatableSelect when a new folder name is
   typed, showing an inline "Create" action.
+
 
 ### Fixed
 
