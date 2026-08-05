@@ -68,6 +68,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **Host access is no longer requested at install (Chrome)**: the manifest declares
+  `optional_host_permissions` instead of `host_permissions`, so a fresh install
+  carries no "read and change all your data on all websites" warning. Saving the
+  host in Options requests access to that one origin (and drops the previous one
+  when the host changes); the popup offers a "Grant access" screen if it is ever
+  missing, and the background worker — which has no user gesture to request with —
+  returns an actionable error naming the origin instead of a bare network failure.
+  Firefox keeps `<all_urls>` in `permissions` (granted at install, as MV2 does),
+  so both browsers run the same code path.
 - An open folder now auto-fetches its links only when it has **never** been
   cached, instead of whenever its cached list is empty. The old rule re-fetched
   a folder the moment its last link was removed, which raced an in-flight move

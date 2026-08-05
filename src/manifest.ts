@@ -17,7 +17,7 @@ interface ManifestChrome {
     service_worker: string;
     type: string;
   };
-  host_permissions: string[];
+  optional_host_permissions: string[];
   icons: {
     [key: number]: string;
   };
@@ -113,7 +113,10 @@ const createBaseChromeManifest = async (): Promise<ManifestChrome> => {
         128: 'assets/icon-128.png',
       },
       permissions: ['storage', 'alarms', 'tabs', 'activeTab'],
-      host_permissions: ["*://*/*"],
+      // The user's Linkwarden instance can be at any address, so no fixed origin can be declared;
+      // requested at runtime for that one origin when the host is saved in Options, which keeps
+      // the install free of the "read and change all your data on all websites" warning.
+      optional_host_permissions: ['*://*/*'],
       commands: {
         add_current_tab: {
           suggested_key: {

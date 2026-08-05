@@ -3,6 +3,7 @@ import { Eye, EyeOff, Save, RefreshCw, Keyboard, Check } from 'lucide-react';
 import { getBrowser, getStorageItem, setStorageItem } from '../utils/utils';
 import { ApiReturnType } from '../service-worker/bookmark-manager-service';
 import { Folder, LinksByFolder } from '../utils/interfaces';
+import { dropHostAccess, hostOriginPattern, requestHostAccess } from '../utils/hostPermission';
 import {
   ACCENT_COLORS,
   AccentColor,
@@ -89,27 +90,45 @@ const Options = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    setStorageItem('host', host).then(() =>
-      setStorageItem('token', token))
-    .then(() =>
-      setStorageItem('sortLinks', linkSort))
-    .then(() =>
-      setStorageItem('sortFolders', folderSort))
-    .then(() =>
-      setStorageItem('openNewTab', openLinksInNewTab))
-    .then(() =>
-      setStorageItem('savedIndicatorEnabled', savedIndicatorEnabled))
-    .then(() =>
-      setStorageItem('savedIndicatorRefreshMinutes', savedIndicatorRefreshMinutes))
-    .then(() =>
-      getBrowser().runtime.sendMessage({action: 'reload'})
-    ).then(() => {
-      setStatus({isError: false, text: 'Options saved successfully.'});
-      setTimeout(() => setStatus({isError: false, text: ''}), 3000);
-    });
+    const origin = hostOriginPattern(host);
+    if (!origin) {
+      setStatus({ isError: true, text: 'Enter the full address of your Linkwarden instance, e.g. https://linkwarden.example.com' });
+      return;
+    }
+
+    // Before any await: Chrome only honours a permission request while the Save click's user
+    // gesture is still live, and a granted origin re-requested is a no-op that resolves true.
+    const granted = await requestHostAccess(host);
+
+    const previousHost = await getStorageItem('host');
+
+    await setStorageItem('host', host);
+    await setStorageItem('token', token);
+    await setStorageItem('sortLinks', linkSort);
+    await setStorageItem('sortFolders', folderSort);
+    await setStorageItem('openNewTab', openLinksInNewTab);
+    await setStorageItem('savedIndicatorEnabled', savedIndicatorEnabled);
+    await setStorageItem('savedIndicatorRefreshMinutes', savedIndicatorRefreshMinutes);
+
+    if (granted && hostOriginPattern(previousHost) !== origin) {
+      await dropHostAccess(previousHost);
+    }
+
+    await getBrowser().runtime.sendMessage({ action: 'reload' });
+
+    // Settings are still saved when access is declined — losing a pasted token would be worse —
+    // but nothing can reach the server until it is granted, so this is not a success message.
+    if (!granted) {
+      setStatus({ isError: true, text: `Saved, but access to ${origin} was declined. Press Save again and allow it, otherwise the extension cannot reach your Linkwarden.` });
+      setTimeout(() => setStatus({ isError: false, text: '' }), 10000);
+      return;
+    }
+
+    setStatus({ isError: false, text: 'Options saved successfully.' });
+    setTimeout(() => setStatus({ isError: false, text: '' }), 3000);
   };
 
   const handleRefresh = async () => {

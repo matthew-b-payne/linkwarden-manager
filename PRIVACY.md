@@ -53,7 +53,7 @@ None of it is transmitted to the author of this extension.
 | `activeTab` | Read the current tab's URL and title when you save it. |
 | `tabs` | Read URLs/titles of the tabs in the current window for "save all tabs as a session", and reopen a collection's links as a new window. |
 | `alarms` | Periodically refresh the cached link list so the "already saved" badge stays accurate. Configurable, and disableable, in Options. |
-| Host access (`*://*/*`) | A self-hosted Linkwarden instance can be at any address, and the extension cannot know it before you enter it. The permission is used only to call the host you configure. No content script is injected into any page and no page content is read. |
+| Host access | A self-hosted Linkwarden instance can be at any address, so no fixed one can be declared up front. On Chrome the extension therefore requests access to **only the origin you enter**, at the moment you save it in Options — nothing is granted at install, and revoking it in `chrome://extensions` is enough to cut the extension off. Firefox (MV2) grants `<all_urls>` at install instead, since it has no equivalent per-origin flow here. Either way the access is only ever used to call your host: no content script is injected into any page and no page content is read. |
 
 ## Data retention and removal
 

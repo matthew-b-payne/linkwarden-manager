@@ -13,6 +13,7 @@ import { Folder, Link, LinksByFolder, NewLink, SaveSessionRequest, SaveSessionRe
 import { ApiReturnType } from '../service-worker/bookmark-manager-service';
 import { ResizeGrip } from './components/ResizeGrip';
 import { applyDocumentSize, MODAL_MIN_HEIGHT, PopupSize, readPopupSize, resendDocumentSize, savePopupSize } from './popupSize';
+import { hasHostAccess, hostOriginPattern, requestHostAccess } from '../utils/hostPermission';
 
 type BrowseMode = 'folders' | 'tags';
 
@@ -49,6 +50,10 @@ const Popup = () => {
   });
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [hasValidConfiguration, setHasValidConfiguration] = useState(false);
+  const [configuredHost, setConfiguredHost] = useState<string | undefined>(undefined);
+  // undefined until the permission has actually been read, so the popup doesn't flash the
+  // "grant access" screen at users who granted it long ago
+  const [hasAccess, setHasAccess] = useState<boolean | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const isLoadingRef = useRef(false);
@@ -98,6 +103,10 @@ const Popup = () => {
     console.log('Popup Loaded');
 
     getBrowser().runtime.sendMessage({action: 'hasValidConfiguration'}).then(setHasValidConfiguration);
+    getStorageItem('host').then((storedHost: string | undefined) => {
+      setConfiguredHost(storedHost);
+      return hasHostAccess(storedHost).then(setHasAccess);
+    });
 
     getStorageItem('sortLinks').then(setLinkSort);
     getStorageItem('sortFolders').then(setFolderSort);
@@ -595,6 +604,36 @@ const Popup = () => {
     savePopupSize(size);
     resendDocumentSize(size);
   }, []);
+
+  // Chrome grants access to the Linkwarden host at runtime rather than at install (see
+  // utils/hostPermission). A popup click is a user gesture, so the grant can be asked for here
+  // instead of sending the user to Options for a permission they already meant to give.
+  const grantHostAccess = async () => {
+    const granted = await requestHostAccess(configuredHost);
+    setHasAccess(granted);
+    if (granted) {
+      loadAllLinks();
+    }
+  };
+
+  if (hasValidConfiguration && hasAccess === false) {
+    return (
+      <div className="w-96 p-6 text-center bg-base-200 text-base-content">
+        <div className="text-base font-medium">Allow access to your Linkwarden</div>
+        <p className="mt-2 text-sm text-muted">
+          The extension needs permission to reach {hostOriginPattern(configuredHost) ?? 'your instance'}.
+          It is never used for any other site.
+        </p>
+        <button
+          type="button"
+          onClick={grantHostAccess}
+          className="mt-4 px-4 py-2 rounded-md bg-primary hover:bg-primary-hover text-primary-content text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          Grant access
+        </button>
+      </div>
+    );
+  }
 
   if(hasValidConfiguration) {
     return (

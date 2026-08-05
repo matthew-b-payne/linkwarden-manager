@@ -127,6 +127,9 @@ Open the extension **Options** and set:
 - **API Token** — from Linkwarden settings  
 - Optional: appearance (Light / Dark / System + accent colour), sort order, open-in-new-tab, badge refresh interval, keyboard shortcut link
 
+On Chrome, saving prompts once for access to the host you entered — the extension
+ships with no site access at all and asks only for that origin.
+
 ---
 
 ## Usage tips

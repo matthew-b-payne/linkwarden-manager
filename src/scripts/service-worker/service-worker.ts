@@ -1,6 +1,7 @@
 import { LinkwardenService } from './linkwarden-service';
 import { getActionApi, getBrowser, getStorageItem, getStorageItems, normalizeUrlForComparison, setStorageItem } from '../utils/utils';
-import { LinksByFolder } from '../utils/interfaces';
+import { hasHostAccess, hostOriginPattern } from '../utils/hostPermission';
+import { LinksByFolder, NewLink, SaveSessionRequest } from '../utils/interfaces';
 import { ApiReturnType, BookmarkManagerService } from './bookmark-manager-service';
 
 console.log('Background Service Worker Loaded');
@@ -14,11 +15,35 @@ async function getCredentials(): Promise<{ host?: string; token?: string }> {
   return { host: result.host, token: result.token };
 }
 
-async function handleApiAction(request: any): Promise<ApiReturnType<any>> {
+// The message protocol between the popup/options pages and this worker. `runtime.onMessage`
+// hands over an unvalidated value, so the listener narrows on `action` before getting here.
+type ApiRequest =
+  | { action: 'fetchAllLinksFromAllFolders' }
+  | { action: 'fetchFolders' }
+  | { action: 'fetchLinks'; collectionId: number }
+  | { action: 'fetchTags' }
+  | { action: 'saveLink'; link: NewLink }
+  | { action: 'saveSession'; data: SaveSessionRequest }
+  | { action: 'updateLink'; data: NewLink; collectionOwnerId: string }
+  | { action: 'deleteLink'; id: number }
+  | { action: 'createFolder'; name: string; parentId: number }
+  | { action: 'updateFolder'; id: number; name: string; parentId: number }
+  | { action: 'deleteFolder'; id: number };
+
+async function handleApiAction(request: ApiRequest): Promise<ApiReturnType<unknown>> {
   const { host, token } = await getCredentials();
   if (!host || !token) {
     console.warn('Tried to call Linkwarden API with invalid credentials');
     return { success: false, data: 'Extension is not configured. Please set your host and API token in the options.' };
+  }
+
+  // A worker has no user gesture, so it can only report the missing grant — the popup and the
+  // Options page are the two places that can actually ask for it.
+  if (!(await hasHostAccess(host))) {
+    return {
+      success: false,
+      data: `Access to ${hostOriginPattern(host) ?? host} has not been granted. Open the extension options and press Save to allow it.`,
+    };
   }
 
   const service: BookmarkManagerService = new LinkwardenService(host, token);
@@ -46,7 +71,7 @@ async function handleApiAction(request: any): Promise<ApiReturnType<any>> {
     case 'deleteFolder':
       return service.deleteFolder(request.id);
     default:
-      return { success: false, data: 'Unknown action: ' + request.action };
+      return { success: false, data: 'Unknown action: ' + JSON.stringify(request) };
   }
 }
 
@@ -228,13 +253,24 @@ getBrowser().commands.onCommand.addListener(async (command: string) => {
   }
 });
 
-getBrowser().runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  console.log('Message received:', request);
+// `runtime.onMessage` delivers whatever a sender passed, so read `action` defensively before
+// dispatching on it.
+function messageAction(message: unknown): string | undefined {
+  if (message && typeof message === 'object' && 'action' in message) {
+    return typeof message.action === 'string' ? message.action : undefined;
+  }
+  return undefined;
+}
 
-  if (request.action === 'hasValidConfiguration') {
+getBrowser().runtime.onMessage.addListener(function (message: unknown, _sender: unknown, sendResponse: (response: unknown) => void) {
+  console.log('Message received:', message);
+
+  const action = messageAction(message);
+
+  if (action === 'hasValidConfiguration') {
     getCredentials().then(({ host, token }) => sendResponse(!!host && !!token));
     return true;
-  } else if (request.action === 'reload') {
+  } else if (action === 'reload') {
     // Credentials are read on-demand elsewhere, so there's nothing to refresh for those. The
     // "already saved" indicator's on/off state and refresh interval are cached in the alarm
     // schedule though, so re-sync them, then immediately refresh+rebadge (a no-op if the
@@ -244,8 +280,9 @@ getBrowser().runtime.onMessage.addListener(function (request, sender, sendRespon
   }
 
   // every remaining action hits the Linkwarden API and always sends a response
-  // (success or a failure object) so callers never hang waiting on a dropped message
-  handleApiAction(request).then(sendResponse);
+  // (success or a failure object) so callers never hang waiting on a dropped message.
+  // Only this extension's own pages send these, and they build the payload from ApiRequest.
+  handleApiAction(message as ApiRequest).then(sendResponse);
   return true;
 });
 

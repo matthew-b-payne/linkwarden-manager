@@ -18,7 +18,7 @@ Everything the Developer Dashboard asks for, prepared. Package: `extension.zip`
 | Version | 1.1.0 |
 | Manifest | v3 |
 | Permissions | `storage`, `alarms`, `tabs`, `activeTab` |
-| Host permissions | `*://*/*` |
+| Host permissions | none declared; `optional_host_permissions: *://*/*`, requested at runtime for the single origin the user configures |
 | Content scripts | none |
 | Remote code | none (no `eval`, no CDN scripts; all JS is bundled) |
 
@@ -79,11 +79,15 @@ Everything the Developer Dashboard asks for, prepared. Package: `extension.zip`
 - **alarms** — Refresh the cached link list on an interval (default 10 minutes,
   configurable and disableable) so the "already saved" badge is accurate without
   the popup being opened.
-- **Host permission `*://*/*`** — A Linkwarden instance is self-hosted at an
-  address only the user knows, entered on the Options page, so the origin cannot
-  be declared ahead of time. It is used exclusively for `fetch` calls to that
-  configured host's `/api/v1/*` endpoints. The extension registers no content
-  scripts and never reads page content.
+- **Optional host permission `*://*/*`** — A Linkwarden instance is self-hosted at
+  an address only the user knows, entered on the Options page, so the origin
+  cannot be declared ahead of time. It is declared as `optional_host_permissions`
+  and never granted at install: when the user saves their host, the extension calls
+  `chrome.permissions.request` for that single origin (e.g.
+  `https://linkwarden.example.com/*`) and nothing else, and drops the previous
+  origin if the host is changed. It is used exclusively for `fetch` calls to that
+  host's `/api/v1/*` endpoints. The extension registers no content scripts and
+  never reads page content.
 
 ## Data usage disclosure
 
@@ -148,11 +152,11 @@ or wordmark styling is reused.
 
 ## Review expectations
 
-- Broad host access plus a "read your data on all websites" install warning puts
-  the item into the slower manual-review queue; a few days is normal, longer is
-  possible. The alternative is `optional_host_permissions` + a runtime
-  `chrome.permissions.request` when the host is saved in Options — a code change,
-  not a listing change.
+- Host access is optional and requested at runtime, so the item carries no "read
+  and change all your data on all websites" install warning and should avoid the
+  broad-host-permission in-depth review the dashboard warns about. Keep it that
+  way: adding a `host_permissions` entry later puts the item straight back into
+  that queue.
 - The name contains a third party's trademark. "(Unofficial)", the disclaimer in
   both descriptions, and the absence of Linkwarden's logo in the icon are the
   mitigations; a rename may still be demanded.
