@@ -16,6 +16,7 @@ interface Props {
   openAllInFolder: (folderId: number) => void;
   canShowOverlayButtons: boolean;
   openLinksInNewTab: boolean;
+  onMoveLink: (linkId: number, targetFolderId: number) => void;
 }
 
 export const FolderStructure = ({
@@ -32,6 +33,7 @@ export const FolderStructure = ({
   openAllInFolder,
   canShowOverlayButtons,
   openLinksInNewTab,
+  onMoveLink,
 }: Props) => {
   // set the sorting function depending on the parameter
   // do not pull the condition into the function to make sure the performance is not impacted when sorting a huge number of links
@@ -63,7 +65,7 @@ export const FolderStructure = ({
       folder={folder}
       openFolders={openFolders}
       toggleFolder={toggleFolder}
-      links={linksByFolder[folder.id] || []}
+      links={linksByFolder[folder.id]}
       subFolders={childrenByParentId.get(folder.id) || []}
       renderFolder={renderFolder}
       loadLinksForFolder={loadLinksForFolder}
@@ -74,6 +76,7 @@ export const FolderStructure = ({
       openAllInFolder={openAllInFolder}
       canShowOverlayButtons={canShowOverlayButtons}
       openLinksInNewTab={openLinksInNewTab}
+      onMoveLink={onMoveLink}
     />
   );
 

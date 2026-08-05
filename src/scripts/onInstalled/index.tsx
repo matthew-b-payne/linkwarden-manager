@@ -1,6 +1,9 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import '@/styles/index.css';
+import { initTheme } from '../utils/theme';
+
+initTheme();
 
 const OnInstalled = () => {
   return (

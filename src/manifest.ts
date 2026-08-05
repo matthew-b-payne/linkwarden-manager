@@ -1,5 +1,4 @@
 import fs from 'fs-extra';
-import path from 'path';
 
 interface ManifestChrome {
   manifest_version: number;
@@ -23,10 +22,6 @@ interface ManifestChrome {
     [key: number]: string;
   };
   permissions: string[];
-  web_accessible_resources?: Array<{
-    matches: string[];
-    resources: string[];
-  }>;
   commands?: {
     [key: string]: {
       suggested_key: {
@@ -114,15 +109,9 @@ const createBaseChromeManifest = async (): Promise<ManifestChrome> => {
         48: './assets/icon-48.png',
         128: './assets/icon-128.png',
       },
-      permissions: ['webRequest', 'storage', 'alarms', 'tabs', 'activeTab'],
+      permissions: ['storage', 'alarms', 'tabs', 'activeTab'],
       host_permissions: ["*://*/*"],
       commands: {
-        refresh_extension: {
-          suggested_key: {
-            default: 'Ctrl+Space',
-          },
-          description: 'Refresh Extension', // https://developer.chrome.com/docs/extensions/reference/commands/
-        },
         add_current_tab: {
           suggested_key: {
             default: 'Ctrl+Shift+S',
@@ -178,9 +167,6 @@ const createBaseFirefoxManifest = async (): Promise<ManifestFirefox> => {
         'activeTab',
         'tabs',
         '<all_urls>',
-        'webRequest',
-        'http://*/*',
-        'https://*/*'
       ],
       commands: {
         add_current_tab: {
@@ -194,7 +180,9 @@ const createBaseFirefoxManifest = async (): Promise<ManifestFirefox> => {
       browser_specific_settings: {
         gecko: {
           id: "linkwarden_viewer@tidone",
-          strict_min_version: "112.0"
+          // 113 is the first Firefox with oklch() and color-mix() enabled by default, both of
+          // which the accent-colour tokens in src/styles/index.css depend on.
+          strict_min_version: "113.0"
         }
       }
     };
@@ -204,53 +192,23 @@ const createBaseFirefoxManifest = async (): Promise<ManifestFirefox> => {
   }
 };
 
-const getManifest = async (resources: string[]): Promise<ManifestChrome | ManifestFirefox> => {
-  try {
-    const target = process.env.TARGET_BROWSER || 'CHROME';
+const getManifest = async (): Promise<ManifestChrome | ManifestFirefox> => {
+  const target = process.env.TARGET_BROWSER || 'CHROME';
 
-    if (target === 'CHROME') {
-      const baseManifest = await createBaseChromeManifest();
-      return {
-      ...baseManifest,
-      web_accessible_resources: [
-        {
-          matches: ['https://*/*', 'http://*/*'],
-          resources,
-        },
-      ],
-    };
-    } else if (target === 'FIREFOX') {
-      return await createBaseFirefoxManifest();
-    } else {
-      console.error('Error creating manifest: No target browser specified');
-      throw 'No target browser specified';
-    }
-
-
-  } catch (error) {
-    console.error('Error creating manifest: ', error);
-    throw error;
+  if (target === 'CHROME') {
+    return await createBaseChromeManifest();
   }
+  if (target === 'FIREFOX') {
+    return await createBaseFirefoxManifest();
+  }
+
+  throw new Error(`Unknown TARGET_BROWSER "${target}": expected CHROME or FIREFOX`);
 };
 
-const readJsFiles = async (dir: string): Promise<string[]> => {
-  try {
-    const files = await fs.readdir(dir);
-    return files
-      .filter((file: string) => path.extname(file) === '.js')
-      .map((file: string) => path.join(dir, file));
-  } catch (error) {
-    console.error(`Error reading JS files from ${dir}: `, error);
-    throw error;
-  }
-};
 
 export const writeManifest = async (): Promise<void> => {
   try {
-    const dir = 'dist/js';
-    const files = await readJsFiles(dir);
-
-    const manifest = await getManifest(files);
+    const manifest = await getManifest();
 
     fs.writeFileSync('dist/manifest.json', JSON.stringify(manifest, null, 2));
   } catch (error) {

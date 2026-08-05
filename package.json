@@ -1,8 +1,8 @@
 {
     "name": "linkwarden-manager",
     "longName": "Linkwarden Manager (Unofficial)",
-    "description": "Browse and manage your Linkwarden library from the browser. Unofficial — not affiliated with Linkwarden.",
-    "version": "1.0.5",
+    "description": "Browse, search and save to your self-hosted Linkwarden library from the toolbar. Unofficial — not affiliated with Linkwarden.",
+    "version": "1.1.0",
     "main": "index.js",
     "scripts": {
         "format": "prettier --write \"./src/**/*.ts\" \"./src/**/*.tsx\"",
@@ -16,7 +16,7 @@
         "preview": "vite preview"
     },
     "author": "Doug Silkstone <doug@withseismic.com>",
-    "license": "ISC",
+    "license": "MIT",
     "type": "module",
     "devDependencies": {
         "@phosphor-icons/react": "^2.1.10",

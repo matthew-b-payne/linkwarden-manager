@@ -27,6 +27,7 @@ Use them together if you want. Use this alone if you live in the toolbar.
 | Tag browse, filter, counts | — | **Yes** |
 | Search cached library | — | **Yes** |
 | Edit / delete links | — | **Yes** |
+| Drag & drop links between folders | — | **Yes** (spring-loaded folders) |
 | Create / rename / delete folders | — | **Yes** |
 | Save all tabs as a session folder | Yes | **Yes** (tags, nest under Sessions, or pick folder) |
 | Open all links in a folder | — | **Yes** |
@@ -57,7 +58,7 @@ Use them together if you want. Use this alone if you live in the toolbar.
 | **Tags** | Multi-column cards, counts, latest date, filter |
 | **Add link** | URL, title, folder (create inline), tags, notes |
 | **Sessions** | Save every open tab to a new or existing folder |
-| **Options** | Host, API token, sort, badge refresh, shortcut |
+| **Options** | Host, API token, appearance, sort, badge refresh, shortcut |
 | **Badge** | Toolbar checkmark when the current page is already saved |
 
 ---
@@ -72,6 +73,7 @@ Use them together if you want. Use this alone if you live in the toolbar.
 
 ### Real CRUD (not view-only)
 - **Links:** add, edit, delete, tags, optional notes
+- **Move links by dragging** them onto any folder row — hovering a closed folder springs it open, so nested targets take one gesture
 - **Folders:** add, rename, reparent, delete
 - **Path-aware create:** type `AI/analysis` to nest under an existing `AI` folder instead of a literal slash name
 - Create a folder **inline** while saving a link
@@ -84,8 +86,11 @@ Use them together if you want. Use this alone if you live in the toolbar.
 - Sort links and folders independently (name / date)
 
 ### Looks the part
-- Theme tokens aligned with Linkwarden’s light/dark palette (system preference)
+- **Light / Dark / System** appearance setting, matching Linkwarden's own three options — and the palette is Linkwarden's, token for token
+- **All seven Linkwarden accent colours**, using its exact OKLCH values, so the popup matches the web app you already themed. (Linkwarden keeps the accent in browser storage rather than on your account, so it can't be synced — pick it once here.)
+- **Folder icons follow your accent** — a folder you have never given a colour picks up the accent instead of Linkwarden's stock sky blue, so the whole tree matches. Colour a collection deliberately in Linkwarden and that colour is kept, here and there
 - Compact popup UI aimed at daily use, not a one-shot save dialog
+- **Resizable popup** — drag the bottom-left grip to enlarge it (up to the browser's 800×600 popup limit); the size is remembered, double-click resets it. Shrinking applies fully on the next open, since Chrome won't shrink a popup window that's already on screen
 
 ---
 
@@ -120,7 +125,7 @@ Output lands in `dist/`.
 Open the extension **Options** and set:
 - **Host** — e.g. `https://cloud.linkwarden.app` or your self-hosted URL  
 - **API Token** — from Linkwarden settings  
-- Optional: sort order, open-in-new-tab, badge refresh interval, keyboard shortcut link
+- Optional: appearance (Light / Dark / System + accent colour), sort order, open-in-new-tab, badge refresh interval, keyboard shortcut link
 
 ---
 
@@ -131,6 +136,8 @@ Open the extension **Options** and set:
 | Jump the library | Open popup → search, or **Folders** / **Tags** tabs |
 | Filter tags | Tags pane → compact **Filter tags…** (space/comma = OR) |
 | Nest a folder | Add folder → name `Parent/Child` (reuses existing parent segments) |
+| Reorganize links | Drag a link onto another folder row (hold over a closed folder to open it) |
+| Make the popup bigger | Drag the grip in its bottom-left corner (double-click to reset) |
 | Save without opening popup | `Ctrl+Shift+S` / `⌘⇧S` (customize in browser shortcut settings) |
 | Bulk-save a research window | **Save all tabs** → session folder + tags |
 | Spot duplicates | Enable **already saved** badge in Options |
@@ -168,6 +175,8 @@ It is **not** the official Linkwarden browser extension and is **not affiliated 
 - Official extension: [linkwarden/browser-extension](https://github.com/linkwarden/browser-extension)
 
 Use at your own risk with your own API token and instance.
+
+What the extension stores and what leaves your machine: [`PRIVACY.md`](PRIVACY.md).
 
 ---
 

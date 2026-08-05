@@ -1,8 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Save, RefreshCw, Keyboard } from 'lucide-react';
+import { Eye, EyeOff, Save, RefreshCw, Keyboard, Check } from 'lucide-react';
 import { getBrowser, getStorageItem, setStorageItem } from '../utils/utils';
 import { ApiReturnType } from '../service-worker/bookmark-manager-service';
 import { Folder, LinksByFolder } from '../utils/interfaces';
+import {
+  ACCENT_COLORS,
+  AccentColor,
+  DEFAULT_ACCENT_COLOR,
+  DEFAULT_THEME_PREFERENCE,
+  loadAccentColor,
+  loadThemePreference,
+  saveAccentColor,
+  saveThemePreference,
+  ThemePreference,
+} from '../utils/theme';
+
+const ACCENT_LABELS: Record<AccentColor, string> = {
+  default: 'Blue',
+  red: 'Red',
+  rose: 'Rose',
+  yellow: 'Yellow',
+  green: 'Green',
+  orange: 'Orange',
+  zinc: 'Steel',
+};
 
 const Options = () => {
   const [host, setHost] = useState('');
@@ -14,6 +35,8 @@ const Options = () => {
   const [openLinksInNewTab, setOpenLinksInNewTab] = useState(false);
   const [savedIndicatorEnabled, setSavedIndicatorEnabled] = useState(true);
   const [savedIndicatorRefreshMinutes, setSavedIndicatorRefreshMinutes] = useState(10);
+  const [theme, setTheme] = useState<ThemePreference>(DEFAULT_THEME_PREFERENCE);
+  const [accent, setAccent] = useState<AccentColor>(DEFAULT_ACCENT_COLOR);
 
   useEffect(() => {
     getStorageItem('host').then((value) => {
@@ -51,6 +74,8 @@ const Options = () => {
         setSavedIndicatorRefreshMinutes(value);
       }
     });
+    loadThemePreference().then(setTheme);
+    loadAccentColor().then(setAccent);
   }, []);
 
   const openShortcutSettings = () => {
@@ -191,6 +216,60 @@ const Options = () => {
                   )}
                 </button>
               </div>
+            </div>
+            <div>
+              <label
+                htmlFor="theme"
+                className={labelClassNames}
+              >
+                Appearance
+              </label>
+              <select
+                name="theme"
+                id="theme"
+                value={theme}
+                onChange={(e) => {
+                  const next = e.target.value as ThemePreference;
+                  setTheme(next);
+                  // Applied and stored on change rather than on Save: it is a live visual
+                  // setting, so leaving the page mid-preview must not strand a theme that
+                  // the popup then disagrees with.
+                  void saveThemePreference(next);
+                }}
+                className={selectClass}
+              >
+                <option value="system">System</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {ACCENT_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    title={ACCENT_LABELS[color]}
+                    aria-label={`${ACCENT_LABELS[color]} accent`}
+                    aria-pressed={accent === color}
+                    onClick={() => {
+                      setAccent(color);
+                      void saveAccentColor(color);
+                    }}
+                    // The swatch reads the same token the palette uses, so it restyles itself
+                    // when the light/dark choice above changes.
+                    style={{ backgroundColor: `oklch(var(--lw-accent-${color}))` }}
+                    className={`h-9 w-9 rounded-full flex items-center justify-center transition
+                      ${accent === color ? 'ring-2 ring-offset-2 ring-base-content ring-offset-surface' : 'hover:scale-105'}`}
+                  >
+                    {accent === color && <Check className="h-5 w-5 text-primary-content" strokeWidth={3} />}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-muted">
+                Matches Linkwarden's own System / Light / Dark options and its seven accent
+                colours. Applies immediately to this page and the popup — no need to press Save.
+                Linkwarden keeps the accent in browser storage rather than on the server, so this
+                one is per-browser there too.
+              </p>
             </div>
             <div>
               <label

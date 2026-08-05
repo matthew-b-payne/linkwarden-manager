@@ -4,10 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.1.0] - 2026-08-04
 
 ### Added
 
+- **Resizable popup**: drag the grip in the popup's bottom-left corner to make it
+  wider/taller, up to 800x600 — measured as Chromium's hard ceiling for an
+  extension popup, which grants exactly that and refuses a larger document —
+  double-click the grip to reset. The size is remembered between openings (applied
+  before first paint, so the popup never opens at one size and jumps to another),
+  and the folder/tag list fills whatever height is set instead of a fixed 384px.
+  The size is set on the document element itself, since that is what the browser
+  derives the popup window's size from, and it is re-sent once the drag releases —
+  Chromium grows a popup window immediately but can skip a shrink that happened
+  while the drag still held pointer capture, leaving dead space until reopening.
+- **Drag & drop links between folders**: links in the folder tree can be dragged
+  onto any other folder row to move them there. The hovered folder highlights,
+  a closed folder springs open after a short hover so subfolders can be reached
+  in one gesture, and the source folder is never offered as a target. The move
+  is applied to the local cache immediately and rolled back (with the server's
+  error message) if the API call fails.
 - **Tags browse mode** in the popup: a Folders | Tags segmented control switches
   the main pane between the collection tree and a multi-column tag card grid
   (name, latest link date, link count). Click a tag to drill into its links;
@@ -52,6 +68,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- An open folder now auto-fetches its links only when it has **never** been
+  cached, instead of whenever its cached list is empty. The old rule re-fetched
+  a folder the moment its last link was removed, which raced an in-flight move
+  and read the pre-move state back in (the moved link reappeared in its old
+  folder); it also re-fetched empty folders redundantly.
 - **Rebranded** to **Linkwarden Manager (Unofficial)** (`package.json` name/
   longName/description, Options title, manifest `homepage_url` →
   [matthew-b-payne/linkwarden-manager](https://github.com/matthew-b-payne/linkwarden-manager)).
@@ -84,6 +105,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- White bar beside the popup UI. Only the app root painted a background and
+  `color-scheme` was never declared, so the link list's native scrollbar rendered
+  light against the dark theme, and any area the root didn't cover fell through
+  to the browser's white canvas — most visible after shrinking the popup, since
+  Chrome keeps the larger popup window until it is next opened. `html`/`body` now
+  carry the theme background and the pages declare `color-scheme: light`/`dark`.
 - Fetching links and tags surfaced `undefined` instead of the real Linkwarden
   error (e.g. an invalid API token) on failure, because the cursor-paginated
   `/api/v1/search` and `/api/v1/tags` error paths read the wrong response
@@ -103,6 +130,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `preventDefault()` on Enter when no option is focused yet, letting the
   keypress fall through to the browser's native "submit the enclosing form"
   behavior.
+
+### Removed
+
+- Dead manifest surface ahead of the Chrome Web Store listing: the `webRequest`
+  permission (declared since the fork, never used by any code path), the
+  `web_accessible_resources` block that exposed every built bundle to every
+  http(s) page (left over from the content script removed in 1.0.3), and the
+  `refresh_extension` command, which bound `Ctrl+Space` but had no
+  `commands.onCommand` handler. Firefox's redundant `http://*/*` +
+  `https://*/*` entries are dropped in favour of the `<all_urls>` it already
+  requested.
 
 ## [1.0.5] - 2026-05-04
 

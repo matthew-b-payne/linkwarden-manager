@@ -11,6 +11,8 @@ import { DeleteFolderModal } from './components/DeleteFolderModal';
 import { AddFolderModal } from './components/AddFolderModal';
 import { Folder, Link, LinksByFolder, NewLink, SaveSessionRequest, SaveSessionResult, SessionTab, Tag } from '../utils/interfaces';
 import { ApiReturnType } from '../service-worker/bookmark-manager-service';
+import { ResizeGrip } from './components/ResizeGrip';
+import { applyDocumentSize, MODAL_MIN_HEIGHT, PopupSize, readPopupSize, resendDocumentSize, savePopupSize } from './popupSize';
 
 type BrowseMode = 'folders' | 'tags';
 
@@ -18,6 +20,7 @@ type BrowseMode = 'folders' | 'tags';
 const Popup = () => {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [linksByFolder, setLinksByFolder] = useState<LinksByFolder>({});
+  const [popupSize, setPopupSize] = useState<PopupSize>(readPopupSize);
   const [openFolders, setOpenFolders] = useState(new Set<number>());
   const [searchQuery, setSearchQuery] = useState('');
   const [browseMode, setBrowseMode] = useState<BrowseMode>('folders');
@@ -520,6 +523,56 @@ const Popup = () => {
     });
   }, []);
 
+  // Drag & drop target handler: moves a link into another folder. The local cache is updated
+  // first so the tree reacts instantly, and rolled back verbatim if the API call fails — a
+  // reload can't be used for that, since the same outage that failed the move fails the reload
+  // and would leave the optimistic state on screen as if the move had worked.
+  const moveLinkToFolder = useCallback((linkId: number, targetFolderId: number) => {
+    const targetFolder = folders.find((folder) => folder.id === targetFolderId);
+    if (!targetFolder) {
+      return;
+    }
+
+    let link: Link | undefined;
+    let sourceKey = '';
+    for (const key of Object.keys(linksByFolder)) {
+      const found = linksByFolder[key].find((candidate) => candidate.id === linkId);
+      if (found) {
+        link = found;
+        sourceKey = key;
+        break;
+      }
+    }
+    if (!link || sourceKey === String(targetFolderId)) {
+      return;
+    }
+
+    const optimistic: LinksByFolder = {
+      ...linksByFolder,
+      [sourceKey]: linksByFolder[sourceKey].filter((candidate) => candidate.id !== linkId),
+      [targetFolderId]: [...(linksByFolder[targetFolderId] || []), { ...link, folder: targetFolder }],
+    };
+    setLinksByFolder(optimistic);
+    setStorageItem('linksByFolder', optimistic);
+
+    const movedLink: NewLink = {
+      id: link.id,
+      url: link.url,
+      title: link.name,
+      description: link.description || '',
+      collectionId: targetFolderId,
+      tags: link.tags.map((tag) => tag.name),
+    };
+    const rollback = linksByFolder;
+    getBrowser().runtime.sendMessage({action: 'updateLink', data: movedLink, collectionOwnerId: targetFolder.ownerId}).then((response: ApiReturnType<any>) => {
+      if (!response || !response.success) {
+        setLinksByFolder(rollback);
+        setStorageItem('linksByFolder', rollback);
+        alert('Error moving link: ' + (response ? response.data : 'no response from the extension background'));
+      }
+    });
+  }, [folders, linksByFolder]);
+
   const openLinkwarden = () => {
     getStorageItem('host').then((host) => {
       getBrowser().tabs.create({'url': host});
@@ -527,13 +580,26 @@ const Popup = () => {
   };
 
   const isAnyModalShown = showAddLinkModal || showDeleteFolderModal || showEditLinkModal || showAddFolderModal || showEditFolderModal || showSaveSessionModal;
+  // Modals are `fixed inset-0`, so the window itself has to stay tall enough to hold one.
+  const documentSize: PopupSize = {
+    width: popupSize.width,
+    height: isAnyModalShown ? Math.max(popupSize.height, MODAL_MIN_HEIGHT) : popupSize.height,
+  };
+
+  useEffect(() => {
+    applyDocumentSize(documentSize);
+  }, [documentSize.width, documentSize.height]);
+
+  const commitPopupSize = useCallback((size: PopupSize) => {
+    setPopupSize(size);
+    savePopupSize(size);
+    resendDocumentSize(size);
+  }, []);
 
   if(hasValidConfiguration) {
     return (
-      <div
-        className={`w-[500px] ${isAnyModalShown ? 'h-[500px]' : ''} p-4 bg-base-200 text-base-content`}
-      >
-        <div className="flex items-center">
+      <div className="relative flex flex-col h-full p-4 bg-base-200 text-base-content">
+        <div className="flex items-center shrink-0">
           <div className="relative flex-grow">
             <input
               type="text"
@@ -590,7 +656,7 @@ const Popup = () => {
             <img src='/assets/icon-48.png' width='32' height='32' alt='Open Linkwarden' />
           </button>
         </div>
-        <div className="mt-2 flex rounded-md border border-border overflow-hidden text-sm">
+        <div className="mt-2 flex rounded-md border border-border overflow-hidden text-sm shrink-0">
           <button
             type="button"
             onClick={() => switchBrowseMode('folders')}
@@ -616,10 +682,10 @@ const Popup = () => {
             Tags
           </button>
         </div>
-        <div className="flex justify-center mb-4 h-[4px]">
+        <div className="flex justify-center mb-4 h-[4px] shrink-0">
           <BarLoader width={"350px"} loading={isLoading} color={'var(--lw-loader)'} />
         </div>
-        <div className="max-h-96 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto">
           {searchQuery ? (
             <SearchResults
               links={filteredLinks}
@@ -657,6 +723,7 @@ const Popup = () => {
               openAllInFolder={openAllInFolder}
               canShowOverlayButtons={!isAnyModalShown}
               openLinksInNewTab={openLinksInNewTab}
+              onMoveLink={moveLinkToFolder}
             />
           )}
         </div>
@@ -720,6 +787,7 @@ const Popup = () => {
             closeModal={closeSaveSessionModal}
           />
         )}
+        <ResizeGrip size={popupSize} onResize={setPopupSize} onCommit={commitPopupSize} />
       </div>
     );
   }

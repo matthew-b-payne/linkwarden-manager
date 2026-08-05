@@ -1,7 +1,9 @@
 import { FolderOpen, Folder, ChevronRight, Trash2, Edit3, FolderOutput } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { DragEventHandler, useEffect, useRef, useState } from 'react';
 import { LinkItem } from './LinkItem';
 import { Folder as FolderInterface, Link, NewLink } from '@/scripts/utils/interfaces';
+import { canDropLinkInFolder, readDraggedLinkId } from '@/scripts/utils/linkDrag';
+import { defaultFolderColor } from '@/scripts/utils/utils';
 import { IconWeight } from '@phosphor-icons/react';
 import FolderIcon from './FolderIcon';
 
@@ -9,7 +11,7 @@ interface Props {
   folder: FolderInterface;
   openFolders: Set<number>;
   toggleFolder: (id: number) => void;
-  links: Link[];
+  links: Link[] | undefined;
   subFolders: FolderInterface[];
   renderFolder: (folder: FolderInterface) => React.JSX.Element;
   loadLinksForFolder: (id: number) => void;
@@ -20,6 +22,7 @@ interface Props {
   openAllInFolder: (folderId: number) => void;
   canShowOverlayButtons: boolean;
   openLinksInNewTab: boolean;
+  onMoveLink: (linkId: number, targetFolderId: number) => void;
 }
 
 export const FolderItem = ({
@@ -37,6 +40,7 @@ export const FolderItem = ({
   openAllInFolder,
   canShowOverlayButtons,
   openLinksInNewTab,
+  onMoveLink,
 }: Props) => {
   const isOpen: boolean = openFolders.has(folder.id);
   const [showConfirmOpenAll, setShowConfirmOpenAll] = useState(false);
@@ -49,24 +53,113 @@ export const FolderItem = ({
       : sortLinks == 'date_ascending'
         ? (a: Link, b: Link) => new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf()
         : (a: Link, b: Link) => new Date(b.createdAt).valueOf() - new Date(a.createdAt).valueOf();
-  const sortedLinks = [...links].sort(sortFunction);
+  const sortedLinks = links ? [...links].sort(sortFunction) : [];
 
+  // "never fetched" — not "currently empty". Keying this on `links.length === 0` re-fetched the
+  // folder every time it was emptied, including the instant a drag & drop move optimistically
+  // pulled its last link out: that GET raced the still-in-flight update and read the pre-move
+  // state back into the cache, so the moved link reappeared here until the next full refresh.
+  const hasCachedLinks = links !== undefined;
   useEffect(() => {
-    if (isOpen && links.length === 0) {
-      // this doesn't seem to work
+    if (isOpen && !hasCachedLinks) {
       loadLinksForFolder(folder.id);
     }
-  }, [isOpen, folder.id, links.length, loadLinksForFolder]);
+  }, [isOpen, folder.id, hasCachedLinks, loadLinksForFolder]);
 
-  const FallbackIcon = ({isOpen}) => (isOpen ? <FolderOpen size={20} color={folder.color} className="mr-2" /> : <Folder size={20} color={folder.color} className="mr-2" />);
+  // A folder still carrying Linkwarden's default colour has never actually been given one, so it
+  // follows the accent instead of pinning sky blue. `undefined` lets the icon inherit
+  // `currentColor` from `text-primary`. A colour the user deliberately picked is left alone.
+  const followsAccent = folder.color?.toLowerCase() === defaultFolderColor;
+  const iconColor = followsAccent ? undefined : folder.color;
+  const iconClass = followsAccent ? 'mr-2 text-primary' : 'mr-2';
+  const headerTint = followsAccent
+    ? 'color-mix(in oklab, oklch(var(--lw-accent)) 12%, transparent)'
+    : `${folder.color}20`;
+
+  const FallbackIcon = ({isOpen}) => (isOpen
+    ? <FolderOpen size={20} color={iconColor} className={iconClass} />
+    : <Folder size={20} color={iconColor} className={iconClass} />);
+
+  const [isDropTarget, setIsDropTarget] = useState(false);
+  // dragenter/dragleave also fire for the header's children, so a plain boolean flickers as the
+  // pointer crosses the icon or label; count enters and only clear on the matching last leave
+  const dragEnterCount = useRef(0);
+  const springOpenTimer = useRef<number | null>(null);
+
+  const cancelSpringOpen = () => {
+    if (springOpenTimer.current !== null) {
+      window.clearTimeout(springOpenTimer.current);
+      springOpenTimer.current = null;
+    }
+  };
+
+  useEffect(() => cancelSpringOpen, []);
+
+  const clearDropState = () => {
+    dragEnterCount.current = 0;
+    cancelSpringOpen();
+    setIsDropTarget(false);
+  };
+
+  const onDragEnter: DragEventHandler<HTMLDivElement> = (event) => {
+    if (!canDropLinkInFolder(event.dataTransfer, folder.id)) {
+      return;
+    }
+    event.preventDefault();
+    dragEnterCount.current += 1;
+    setIsDropTarget(true);
+    // spring-loaded folder: hovering a closed folder opens it, so a link can be dropped into a
+    // subfolder in one gesture instead of dropping, expanding, then dragging again
+    if (!isOpen && springOpenTimer.current === null) {
+      springOpenTimer.current = window.setTimeout(() => {
+        springOpenTimer.current = null;
+        toggleFolder(folder.id);
+      }, 700);
+    }
+  };
+
+  const onDragOver: DragEventHandler<HTMLDivElement> = (event) => {
+    if (!canDropLinkInFolder(event.dataTransfer, folder.id)) {
+      return;
+    }
+    event.preventDefault();  // without this the browser rejects the drop and no drop event fires
+    event.dataTransfer.dropEffect = 'move';
+  };
+
+  const onDragLeave: DragEventHandler<HTMLDivElement> = (event) => {
+    if (!canDropLinkInFolder(event.dataTransfer, folder.id)) {
+      return;
+    }
+    dragEnterCount.current -= 1;
+    if (dragEnterCount.current <= 0) {
+      clearDropState();
+    }
+  };
+
+  const onDrop: DragEventHandler<HTMLDivElement> = (event) => {
+    if (!canDropLinkInFolder(event.dataTransfer, folder.id)) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    const linkId = readDraggedLinkId(event.dataTransfer);
+    clearDropState();
+    if (linkId !== null) {
+      onMoveLink(linkId, folder.id);
+    }
+  };
 
   return (
     <div className="mb-2">
       <div
-        className="flex items-center p-2 rounded-md cursor-pointer relative group transition-colors duration-200 bg-surface hover:bg-surface-hover"
+        className={`flex items-center p-2 rounded-md cursor-pointer relative group transition-colors duration-200 ${isDropTarget ? 'bg-surface-hover ring-2 ring-inset ring-primary' : 'bg-surface hover:bg-surface-hover'}`}
         onClick={() => toggleFolder(folder.id)}
+        onDragEnter={onDragEnter}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
         style={{
-          backgroundImage: `linear-gradient(to right, ${folder.color}20 0%, transparent 25%)`,
+          backgroundImage: `linear-gradient(to right, ${headerTint} 0%, transparent 25%)`,
         }}
       >
         {folder.icon && (
@@ -75,8 +168,8 @@ export const FolderItem = ({
             weight={(folder.iconWeight || "regular") as IconWeight}
             isOpen={isOpen}
             size={20}
-            color={folder.color}
-            className="mr-2"
+            color={iconColor}
+            className={iconClass}
           />
         ) ||
           <FallbackIcon isOpen={isOpen} />
@@ -164,6 +257,7 @@ export const FolderItem = ({
               showEditLinkModal = {showEditLinkModal}
               canShowOverlayButtons = {canShowOverlayButtons}
               openLinksInNewTab = {openLinksInNewTab}
+              draggable
             />
           ))}
         </div>

@@ -1,5 +1,5 @@
 import { Folder, Link, LinksByFolder, NewLink, SaveSessionRequest, SaveSessionResult, Tag } from "../utils/interfaces";
-import { normalizeColor } from "../utils/utils";
+import { defaultFolderColor, normalizeColor } from "../utils/utils";
 import { ApiReturnType, BookmarkManagerService } from "./bookmark-manager-service";
 
 function errorToMessage(error: unknown): string {
@@ -583,7 +583,9 @@ export class LinkwardenService implements BookmarkManagerService {
           ownerId: 0,
           parentId: currentParentId || undefined,
           createdAt: new Date().toISOString(),
-          color: '#0ea5e9',
+          // Echo of what the server just stored: no colour is sent, so it applies its default,
+          // which the popup then renders in the accent (see FolderItem).
+          color: defaultFolderColor,
         });
         currentParentId = createdId;
         lastCreated = created.data;

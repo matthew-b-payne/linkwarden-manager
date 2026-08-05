@@ -1,8 +1,9 @@
 import { ApiReturnType } from '@/scripts/service-worker/bookmark-manager-service';
 import { Link, NewLink } from '@/scripts/utils/interfaces';
+import { setLinkDragData } from '@/scripts/utils/linkDrag';
 import { getBrowser } from '@/scripts/utils/utils';
 import { Edit3, Trash2 } from 'lucide-react';
-import React, { MouseEventHandler, useState } from 'react';
+import React, { DragEventHandler, MouseEventHandler, useRef, useState } from 'react';
 
 interface Props {
   link: Link;
@@ -11,6 +12,8 @@ interface Props {
   canShowOverlayButtons: boolean;
   openLinksInNewTab: boolean;
   showCollectionName?: boolean;
+  // only the folder tree offers drop targets, so only it turns links into drag sources
+  draggable?: boolean;
 }
 
 const MouseButtons = {
@@ -26,8 +29,15 @@ export const LinkItem = ({
   canShowOverlayButtons,
   openLinksInNewTab,
   showCollectionName = false,
+  draggable = false,
 }: Props) => {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  // Chrome/Firefox swallow the mouseup that ends a drag, but a cancelled drag (Esc, drop on a
+  // non-target) can still land one on this element — which would open the link the user was
+  // only trying to move. Both guards below make that impossible.
+  const isDraggingRef = useRef(false);
+  const dragEndedAt = useRef(0);
 
   const handleDelete = () => {
     setShowConfirmDelete(true);
@@ -51,7 +61,7 @@ export const LinkItem = ({
   const tagsTexts = link.tags.map((tag) => tag.name).join(', ');
 
   const onMouseUp: MouseEventHandler<HTMLDivElement> = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    if (!event.target || event.detail > 1) {
+    if (!event.target || event.detail > 1 || isDraggingRef.current || Date.now() - dragEndedAt.current < 200) {
       return;
     }
     event.preventDefault();
@@ -70,8 +80,26 @@ export const LinkItem = ({
     }
   }
 
+  const onDragStart: DragEventHandler<HTMLDivElement> = (event) => {
+    isDraggingRef.current = true;
+    setIsDragging(true);
+    setLinkDragData(event.dataTransfer, link);
+  };
+
+  const onDragEnd = () => {
+    isDraggingRef.current = false;
+    dragEndedAt.current = Date.now();
+    setIsDragging(false);
+  };
+
   return (
-    <div className="flex flex-col p-2 rounded-md mb-2 relative group bg-surface">
+    <div
+      className={`flex flex-col p-2 rounded-md mb-2 relative group bg-surface ${isDragging ? 'opacity-40' : ''}`}
+      draggable={draggable}
+      onDragStart={draggable ? onDragStart : undefined}
+      onDragEnd={draggable ? onDragEnd : undefined}
+      title={draggable ? 'Drag onto a folder to move this link' : undefined}
+    >
       <div className='cursor-pointer' onMouseUp={onMouseUp}>
         <div className="flex items-center text-sm">
           <img src={`https://icons.duckduckgo.com/ip3/${new URL(link.url).hostname}.ico`} width={16} height={16} loading='lazy' className='mr-1' />

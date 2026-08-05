@@ -1,9 +1,26 @@
 @import "tailwindcss";
 
-/* Linkwarden-aligned semantic tokens (light defaults). */
-:root {
-  --lw-primary: #0369a1;
-  --lw-primary-hover: #075985;
+/* Linkwarden-aligned semantic tokens. `<html data-theme>` is set before the first paint by
+ * initTheme() (src/scripts/utils/theme.ts), which resolves the stored preference — system,
+ * light or dark — so each palette is defined exactly once here and never duplicated across a
+ * media query. `color-scheme` makes native scrollbars and form controls follow along. */
+:root,
+:root[data-theme="light"] {
+  color-scheme: light;
+  /* Accent swatches, verbatim from Linkwarden's styles/globals.css (bare OKLCH components,
+   * because daisyUI feeds them straight into `--p`). The picked one becomes the primary,
+   * which is the only token Linkwarden's own picker touches. */
+  --lw-accent-default: 50% 0.1193 242.75;
+  --lw-accent-red: 49.7% 0.2026 22.43;
+  --lw-accent-rose: 55% 0.25 340;
+  --lw-accent-yellow: 69.58% 0.2 90;
+  --lw-accent-green: 60% 0.2 140;
+  --lw-accent-orange: 70% 0.22 60;
+  --lw-accent-zinc: 50% 0.07 220;
+  --lw-accent: var(--lw-accent-default);
+  --lw-primary: oklch(var(--lw-accent));
+  /* daisyUI derives its hover shade; on a light background that means going darker. */
+  --lw-primary-hover: color-mix(in oklab, oklch(var(--lw-accent)) 82%, black);
   --lw-primary-content: #ffffff;
   --lw-base-100: #ffffff;
   --lw-base-200: #f3f4f6;
@@ -25,30 +42,69 @@
   --lw-loader: #9ca3af;
 }
 
+/* Pre-JS guard: the browser paints the popup window from the document background, so a
+ * dark-mode user would get a white flash if the bundle is slow to evaluate. Only the window
+ * background is worth covering — nothing has rendered yet — so this overrides one token
+ * rather than restating the palette. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --lw-primary: #7dd3fc;
-    --lw-primary-hover: #38bdf8;
-    --lw-primary-content: #000000;
-    --lw-base-100: #171717;
+  :root:not([data-theme]) {
+    color-scheme: dark;
     --lw-base-200: #262626;
-    --lw-base-300: #404040;
-    --lw-base-content: #fafafa;
-    --lw-muted: #9ca3af;
-    --lw-surface: #262626;
-    --lw-surface-hover: #404040;
-    --lw-border: #404040;
-    --lw-danger: #f1293c;
-    --lw-danger-hover: #ef4444;
-    --lw-danger-soft: #450a0a;
-    --lw-danger-soft-content: #fecaca;
-    --lw-success: #00b17d;
-    --lw-success-hover: #059669;
-    --lw-info-soft: #0c4a6e;
-    --lw-info-soft-content: #bae6fd;
-    --lw-overlay-scrim: rgb(0 0 0 / 0.5);
-    --lw-loader: #9ca3af;
   }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  /* Darkened from Linkwarden's `82.76% 0.101277 230.317893` (#7dd3fc): at that lightness it sat
+   * within 0.06 L of --lw-accent-zinc (#b5e1f0) and the two swatches read as the same pale blue.
+   * 74%/0.125 stays in sRGB, keeps 6.7:1 on the surface and 9.4:1 for the black label on top. */
+  --lw-accent-default: 74% 0.125 230.3;
+  --lw-accent-red: 69.73% 0.168 22.43;
+  --lw-accent-rose: 75% 0.2 340;
+  --lw-accent-yellow: 90% 0.1 90;
+  --lw-accent-green: 88.58% 0.2465 140;
+  --lw-accent-orange: 80% 0.18 60;
+  --lw-accent-zinc: 88.45% 0.05 220;
+  --lw-accent: var(--lw-accent-default);
+  --lw-primary: oklch(var(--lw-accent));
+  /* Dark accents are pastels, so the hover shade brightens instead. */
+  --lw-primary-hover: color-mix(in oklab, oklch(var(--lw-accent)) 82%, white);
+  --lw-primary-content: #000000;
+  --lw-base-100: #171717;
+  --lw-base-200: #262626;
+  --lw-base-300: #404040;
+  --lw-base-content: #fafafa;
+  --lw-muted: #9ca3af;
+  --lw-surface: #262626;
+  --lw-surface-hover: #404040;
+  --lw-border: #404040;
+  --lw-danger: #f1293c;
+  --lw-danger-hover: #ef4444;
+  --lw-danger-soft: #450a0a;
+  --lw-danger-soft-content: #fecaca;
+  --lw-success: #00b17d;
+  --lw-success-hover: #059669;
+  --lw-info-soft: #0c4a6e;
+  --lw-info-soft-content: #bae6fd;
+  --lw-overlay-scrim: rgb(0 0 0 / 0.5);
+  --lw-loader: #9ca3af;
+}
+
+/* Accent selection. Same specificity as the palette blocks above, so source order decides —
+ * these must stay after them. The values themselves are theme-scoped, so one rule per accent
+ * covers both themes. `<html data-accent>` is set by initTheme() alongside the theme. */
+:root[data-accent="default"] { --lw-accent: var(--lw-accent-default); }
+:root[data-accent="red"] { --lw-accent: var(--lw-accent-red); }
+:root[data-accent="rose"] { --lw-accent: var(--lw-accent-rose); }
+:root[data-accent="yellow"] { --lw-accent: var(--lw-accent-yellow); }
+:root[data-accent="green"] { --lw-accent: var(--lw-accent-green); }
+:root[data-accent="orange"] { --lw-accent: var(--lw-accent-orange); }
+:root[data-accent="zinc"] { --lw-accent: var(--lw-accent-zinc); }
+
+/* Yellow and orange are light enough in either theme that white text on them fails contrast. */
+:root[data-accent="yellow"],
+:root[data-accent="orange"] {
+  --lw-primary-content: #0a0a0a;
 }
 
 @theme inline {
@@ -73,6 +129,22 @@
   --color-info-soft-content: var(--lw-info-soft-content);
   --color-overlay-scrim: var(--lw-overlay-scrim);
   --color-loader: var(--lw-loader);
+}
+
+/* The popup sizes `html` itself (see popupSize.ts) so the browser has an unambiguous document
+ * box to size the popup window from. body and the React container inherit that box, so the app
+ * covers the whole window and nothing falls through to the browser's white canvas — which is
+ * what showed as a white strip whenever the window was larger than the UI.
+ * `color-scheme` above additionally makes the list's native scrollbar follow the theme instead
+ * of rendering as a light bar against the dark UI. */
+html,
+body {
+  height: 100%;
+  background-color: var(--lw-base-200);
+}
+
+#popup-root {
+  height: 100%;
 }
 
 .custom-react-select-container .custom-react-select__control {
