@@ -108,8 +108,9 @@ to DuckDuckGo. Disclosed in `PRIVACY.md`.
 | Asset | Requirement | Status |
 | --- | --- | --- |
 | Store icon | 128x128 PNG | `src/assets/icon-128.png` |
-| Screenshots | 1-5, **1280x800 or 640x400** PNG/JPEG, no alpha | `docs/store/*.png` — 5 shots, 1280x800, RGB |
-| Small promo tile | 440x280, optional (needed for featuring) | not made |
+| Screenshots | 1-5, **1280x800 or 640x400** PNG/JPEG, no alpha | `docs/store/0*.png` — 5 shots, 1280x800, RGB |
+| Small promo tile | 440x280, shown in store tiles | `docs/store/promo-small-440x280.png` |
+| Marquee promo tile | 1400x560, needed for featuring | `docs/store/promo-marquee-1400x560.png` |
 
 Upload `docs/store/` in order:
 
@@ -130,6 +131,20 @@ after a UI change: capture the popup page at 560x600 (Options at 620x700) with
 ```bash
 magick shot.png -resize 'x736>' -background '#101014' -gravity center -extent 1280x800 -alpha off store-shot.png
 ```
+
+Both promo tiles are HTML/CSS rendered at exact size in Chromium (sources
+regenerable from the icon plus the `01` popup capture): icon, wordmark, one-line
+pitch, "Unofficial" chip on the theme's charcoal/sky gradient. No Linkwarden logo
+or wordmark styling is reused.
+
+## Additional fields
+
+| Field | Value |
+| --- | --- |
+| Official URL | **None** — this needs a domain verified in Google Search Console; a GitHub repo cannot be verified, and leaving it None costs nothing |
+| Homepage URL | `https://github.com/matthew-b-payne/linkwarden-manager` |
+| Support URL | `https://github.com/matthew-b-payne/linkwarden-manager/issues` |
+| Mature content | No |
 
 ## Review expectations
 
