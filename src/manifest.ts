@@ -93,11 +93,14 @@ const createBaseChromeManifest = async (): Promise<ManifestChrome> => {
       version: pkg.version,
       description: pkg.description ?? 'GIVE ME A DESCRIPTION',
       homepage_url: 'https://github.com/matthew-b-payne/linkwarden-manager',
+      // Paths are package-root-relative with no `./` prefix: Chrome itself resolves `./x`, but the
+      // Web Store's package validator does not, and rejects the upload with "the icon file
+      // ./assets/icon-128.png is missing from the uploaded package".
       action: {
-        default_popup: './src/scripts/popup/popup.html',
+        default_popup: 'src/scripts/popup/popup.html',
       },
       options_ui: {
-        page: './src/scripts/options/options.html',
+        page: 'src/scripts/options/options.html',
         open_in_tab: true,
       },
       background: {
@@ -105,9 +108,9 @@ const createBaseChromeManifest = async (): Promise<ManifestChrome> => {
         type: 'module',
       },
       icons: {
-        16: './assets/icon-16.png',
-        48: './assets/icon-48.png',
-        128: './assets/icon-128.png',
+        16: 'assets/icon-16.png',
+        48: 'assets/icon-48.png',
+        128: 'assets/icon-128.png',
       },
       permissions: ['storage', 'alarms', 'tabs', 'activeTab'],
       host_permissions: ["*://*/*"],
@@ -138,16 +141,16 @@ const createBaseFirefoxManifest = async (): Promise<ManifestFirefox> => {
       description: pkg.description ?? 'GIVE ME A DESCRIPTION',
       homepage_url: 'https://github.com/matthew-b-payne/linkwarden-manager',
       browser_action: {
-        default_popup: './src/scripts/popup/popup.html',
+        default_popup: 'src/scripts/popup/popup.html',
         default_icon: {
-          16: './assets/icon-16.png',
-          48: './assets/icon-48.png',
-          128: './assets/icon-128.png',
+          16: 'assets/icon-16.png',
+          48: 'assets/icon-48.png',
+          128: 'assets/icon-128.png',
         },
         default_title: pkg.longName ?? pkg.name ?? 'GIVE ME A NAME',
       },
       options_ui: {
-        page: './src/scripts/options/options.html',
+        page: 'src/scripts/options/options.html',
         browser_style: false,
         open_in_tab: true,
       },
@@ -157,9 +160,9 @@ const createBaseFirefoxManifest = async (): Promise<ManifestFirefox> => {
         type: 'module',
       },
       icons: {
-        16: './assets/icon-16.png',
-        48: './assets/icon-48.png',
-        128: './assets/icon-128.png',
+        16: 'assets/icon-16.png',
+        48: 'assets/icon-48.png',
+        128: 'assets/icon-128.png',
       },
       permissions: [
         'storage',
