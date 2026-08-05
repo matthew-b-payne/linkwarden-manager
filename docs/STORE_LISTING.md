@@ -108,19 +108,28 @@ to DuckDuckGo. Disclosed in `PRIVACY.md`.
 | Asset | Requirement | Status |
 | --- | --- | --- |
 | Store icon | 128x128 PNG | `src/assets/icon-128.png` |
-| Screenshots | 1-5, **1280x800 or 640x400** PNG/JPEG, no alpha | must be recaptured — see below |
+| Screenshots | 1-5, **1280x800 or 640x400** PNG/JPEG, no alpha | `docs/store/*.png` — 5 shots, 1280x800, RGB |
 | Small promo tile | 440x280, optional (needed for featuring) | not made |
 
-The `docs/*.png` shots are README-grade only: they include the browser's tab strip
-with personal tabs, other installed extensions, and clipped popup edges. Recapture
-the popup alone (553x570 or larger, 2x scale), then pad each to the store canvas:
+Upload `docs/store/` in order:
+
+| File | Shows |
+| --- | --- |
+| `01-folder-tree.png` | Nested collection tree, per-collection icons/colours, links with favicons, tags and URLs |
+| `02-tags.png` | Tag card grid with latest date and link count, tag filter |
+| `03-add-link.png` | Add Link dialog: URL, title, searchable folder picker, multi-tag, notes |
+| `04-save-session.png` | Save-all-tabs dialog: new session folder, nest under Sessions, tags |
+| `05-options.png` | Options: host, masked token, appearance + seven accents, sort, badge refresh |
+
+They were captured from the real extension driven headless against a **throwaway
+Linkwarden API stub with demo data** — the product exactly as it runs, with no
+personal bookmarks, hosts or tokens in frame, and no browser chrome. To redo them
+after a UI change: capture the popup page at 560x600 (Options at 620x700) with
+`deviceScaleFactor: 2`, then pad each onto the store canvas:
 
 ```bash
-magick shot.png -resize 'x720>' -background '#101014' -gravity center -extent 1280x800 -alpha off store-shot.png
+magick shot.png -resize 'x736>' -background '#101014' -gravity center -extent 1280x800 -alpha off store-shot.png
 ```
-
-Suggested set: folder tree with a folder expanded, tag grid, Add Link dialog,
-Save-all-tabs dialog, Options page (host field redacted).
 
 ## Review expectations
 
