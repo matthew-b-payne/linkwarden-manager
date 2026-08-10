@@ -171,9 +171,22 @@ Always leave `dist/` as the browser you intend to load next (Chrome last if you 
 
 Actively used and extended. Core library manage flows are solid; see [`CHANGELOG.md`](CHANGELOG.md) for recent work (theming, tag browse, path folders, sessions, badge, shortcuts).
 
-### Not a goal (yet)
-- Replacing the official “save + screenshot” capture UX pixel-for-pixel  
-- Mobile  
+### What the official extension still does that this one doesn't
+
+Verified against its source, not guessed:
+
+| Official-only | Where | Verdict here |
+|---|---|---|
+| **Full-page screenshot upload** — hides scrollbars, neutralises fixed elements, scrolls and stitches through a canvas, then POSTs to `/api/v1/archives/<id>?format=0` | `src/@/lib/screenshot.ts` | The one real capability gap. Browser-side capture reaches pages behind a login that your server cannot fetch. Worth adding. |
+| **Right-click menus** — "Add link to Linkwarden" on page/selection/link/image/video/audio, and "Save all tabs to Linkwarden" | `src/pages/Background/index.ts` | Cheap to add (`contextMenus`, no new warning) and saves a popup trip. Wanted. |
+| **Omnibox keyword `lk`** | same | It only filters the links *it* saved, from its own cache. We already cache the whole library, so ours could search everything. Wanted. |
+| **Browser-bookmark sync** (`syncBookmarks`, experimental) | `src/@/lib/cache.ts` | Its own `bookmarks.onCreated/onChanged/onRemoved` listeners are commented out, so live sync is inert. Not planned. |
+| **Username + password sign-in** (`/api/v1/session`) as well as API key | `src/@/lib/auth/auth.ts` | Not planned — an API token is revocable and worth less if leaked. |
+| **Default collection** setting, used to prefill and for silent saves | `configSchema` | Only matters once silent saves exist; comes with the context menu. |
+| **Safari build** (Xcode project + `manifest.safari.json`) | `safari/` | Out of scope. |
+
+### Not a goal
+- Mobile
 - Non-Linkwarden backends (architecture allows it; not shipped)
 
 ---
