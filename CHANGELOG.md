@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.1] - 2026-08-04
+
+Version bump for the Chrome Web Store upload: the 1.1.0 package number was
+consumed by the rejected first upload (manifest paths carried a `./` prefix the
+store's package validator does not resolve) and the store will not accept a
+replacement at the same version. Identical code to 1.1.0.
+
 ## [1.1.0] - 2026-08-04
 
 ### Added
