@@ -27,33 +27,65 @@ Everything the Developer Dashboard asks for, prepared. Package: `extension.zip`
 **Category:** Productivity
 **Language:** English (United States)
 
-**Short description** (≤132 chars):
+**Short description** (≤132 chars — shown in search results, so it carries value, not
+the disclaimer; "(Unofficial)" in the item name plus the disclaimer in the detailed
+description are the trademark mitigation):
 
-> Browse, search and save to your self-hosted Linkwarden library from the toolbar. Unofficial — not affiliated with Linkwarden.
+> Browse, search and manage your self-hosted Linkwarden library from the toolbar — not just save to it. Unofficial client.
+
+The dashboard prefills this field from the packaged manifest description ("Browse,
+search and save to your self-hosted Linkwarden library from the toolbar. Unofficial —
+not affiliated with Linkwarden."). Overwrite it with the line above; the manifest text
+is deliberately left alone so the shipped package does not have to be rebuilt and
+re-versioned for listing copy.
 
 **Detailed description:**
 
-> Linkwarden Manager is an unofficial client for Linkwarden, the self-hosted
-> bookmark manager. Point it at your own instance with an API token and manage
-> your library from the toolbar without opening the web app.
+> Your Linkwarden library in a popup — not just a save button.
 >
-> Features
-> - Browse your collection tree, or switch to a tag grid and drill into a tag's links
-> - Full-text search across your library
-> - Save the current tab (Ctrl+Shift+S) with folder, tags and notes before it's saved
-> - Save every tab in the window as a session, optionally into a new dated collection
-> - Reopen a collection as a fresh window to restore a session
-> - Drag links between collections; create nested collections by typing `AI/analysis`
-> - Edit and delete links and collections
-> - "Already saved" badge on the toolbar icon for the page you're on
-> - Light/dark theme following your system, resizable popup
+> The official extension is built to capture the page you are on. This one is built
+> for everything after that: the collections, tags and links you have already saved,
+> one click from the toolbar, without opening the web app to make every small change.
 >
-> Requires your own Linkwarden instance (self-hosted or cloud) and an API token
-> from Settings → Access Tokens. No account with the extension, no analytics, no
-> telemetry, no backend of its own.
+> You need your own Linkwarden instance — self-hosted or Linkwarden Cloud — and an
+> API token. This is a client for it, not a bookmark service of its own.
 >
-> Unofficial project, not affiliated with or endorsed by Linkwarden.
-> Source: https://github.com/matthew-b-payne/linkwarden-manager
+> WHAT YOU CAN DO WITHOUT LEAVING THE PAGE
+>
+> • Browse the full collection tree — expand and collapse, with the icons and colours
+>   you set on your collections in Linkwarden
+> • Switch to tag view: a grid of every tag with its link count and latest activity;
+>   click one to drill into its links
+> • Search titles, URLs, notes and tag names across the whole library from the popup
+> • Save the current tab with Ctrl+Shift+S — the popup opens pre-filled, so you still
+>   pick the collection, tags and notes before anything is saved
+> • Know whether the page you are on is already saved: the toolbar icon badges it,
+>   kept current by a background refresh you can tune or turn off
+> • Move a link by dragging it onto another collection — hover a closed collection and
+>   it springs open, so a nested target takes one gesture
+> • Create nested collections by typing a path: "Dev/Rust" reuses your existing "Dev"
+>   and creates "Rust" inside it
+> • Edit and delete links and collections in place — title, URL, collection, tags, notes
+> • Save every tab in the window as a session: into a new dated collection nested under
+>   "Sessions", or any collection you choose, with tags applied to all of them
+> • Reopen a collection as a fresh window when you want that session back
+> • Resize the popup to the size you actually want and it stays there; light, dark or
+>   follow the system, in Linkwarden's own seven accent colours
+>
+> SET UP ONCE
+>
+> Open Options, enter your instance's address and an API token (in Linkwarden:
+> Settings → Access Tokens). Chrome then asks for access to that one address and
+> nothing else — the extension ships with no site access at all.
+>
+> NO ACCOUNT, NO TRACKING
+>
+> There is no account with this extension, no analytics, no telemetry and no server of
+> its own. It talks to your instance and nowhere else. (Site icons beside links are
+> fetched from DuckDuckGo, which is disclosed in the privacy policy.)
+>
+> Unofficial project — not affiliated with, endorsed by, or supported by Linkwarden.
+> Open source: https://github.com/matthew-b-payne/linkwarden-manager
 
 **Homepage URL:** `https://github.com/matthew-b-payne/linkwarden-manager`
 **Support URL:** `https://github.com/matthew-b-payne/linkwarden-manager/issues`
@@ -118,13 +150,16 @@ to DuckDuckGo. Disclosed in `PRIVACY.md`.
 
 Upload `docs/store/` in order:
 
-| File | Shows |
-| --- | --- |
-| `01-folder-tree.png` | Nested collection tree, per-collection icons/colours, links with favicons, tags and URLs |
-| `02-tags.png` | Tag card grid with latest date and link count, tag filter |
-| `03-add-link.png` | Add Link dialog: URL, title, searchable folder picker, multi-tag, notes |
-| `04-save-session.png` | Save-all-tabs dialog: new session folder, nest under Sessions, tags |
-| `05-options.png` | Options: host, masked token, appearance + seven accents, sort, badge refresh |
+| File | Caption baked in | Shows |
+| --- | --- | --- |
+| `01-folder-tree.png` | Your whole collection tree, one click from the toolbar | Nested tree, per-collection icons/colours, links with favicons, tags and URLs |
+| `02-tags.png` | Every tag with its link count and latest activity | Tag card grid, tag filter |
+| `03-add-link.png` | Save with collection, tags and notes — Ctrl+Shift+S | Add Link dialog: URL, title, searchable folder picker, multi-tag, notes |
+| `04-save-session.png` | Save every open tab as a session you can reopen | Save-all-tabs dialog: new session folder, nest under Sessions, tags |
+| `05-options.png` | Point it at your own instance, themed like the web app | Options: host, masked token, appearance + seven accents, sort, badge refresh |
+
+The captions are rendered into the canvas (Chrome shows no caption field), so the
+screenshots read as a story rather than five popup pictures.
 
 They were captured from the real extension driven headless against a **throwaway
 Linkwarden API stub with demo data** — the product exactly as it runs, with no
@@ -135,6 +170,9 @@ after a UI change: capture the popup page at 560x600 (Options at 620x700) with
 ```bash
 magick shot.png -resize 'x736>' -background '#101014' -gravity center -extent 1280x800 -alpha off store-shot.png
 ```
+
+Captions are drawn with Noto Sans at 34px semibold, `#e2e8f0`, centred in a 44px band
+at the top of the canvas; the shot is capped at 680px tall beneath it.
 
 Both promo tiles are HTML/CSS rendered at exact size in Chromium (sources
 regenerable from the icon plus the `01` popup capture): icon, wordmark, one-line
