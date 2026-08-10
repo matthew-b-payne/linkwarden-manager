@@ -11,27 +11,36 @@ Unofficial community extension for [Linkwarden](https://linkwarden.app).
 
 ## Why this exists
 
-The [official Linkwarden extension](https://github.com/linkwarden/browser-extension) is great at **capturing** the current page. It is not a library browser.
+Confirmed against [official extension](https://github.com/linkwarden/browser-extension)
+source at time of writing: its popup renders one thing — an **Add Link** form for the
+current tab (`src/pages/Popup/App.tsx`). The only "list your links" call in the
+codebase, `getLinksFetch`, is commented out. To find something you saved, it sends you
+to the web app.
 
-**Linkwarden Manager** is the opposite bet: a full **popup client** for the library you already have — folders, tags, search, edit/delete, sessions, and keyboard power-user flows — without opening the web app for every tweak.
+**Linkwarden Manager** is the opposite bet: a **popup client for the library you already
+have** — collections, tags, search, edit/delete, sessions — without opening the web app
+for every tweak.
 
-Use them together if you want. Use this alone if you live in the toolbar.
+Keep both if you want; they don't conflict, and the official one still owns screenshot
+archiving and bookmark sync.
 
 | | Official extension | **Linkwarden Manager** |
 |---|---|---|
-| Save current page | Yes | Yes (+ shortcut) |
-| Screenshot upload | Yes | — |
-| Username / password login | Yes | API key + host |
-| Browse full folder tree | — | **Yes** |
-| Nested path create (`AI/analysis`) | — | **Yes** |
-| Tag browse, filter, counts | — | **Yes** |
-| Search cached library | — | **Yes** |
-| Edit / delete links | — | **Yes** |
-| Drag & drop links between folders | — | **Yes** (spring-loaded folders) |
-| Create / rename / delete folders | — | **Yes** |
-| Save all tabs as a session folder | Yes | **Yes** (tags, nest under Sessions, or pick folder) |
-| Open all links in a folder | — | **Yes** |
-| “Already saved” toolbar badge | — | **Yes** (background refresh) |
+| The popup is | an Add Link form for the current tab | a browser for your whole library |
+| Save current page | Yes (+ context menu, omnibox `lk`, `Ctrl+Shift+F`) | Yes (+ `Ctrl+Shift+S`, pre-filled) |
+| Screenshot / archive upload | **Yes** | — |
+| Sync browser bookmarks | **Yes** (experimental) | — |
+| Sign in with | username + password, or API key | host + API key |
+| Browse the collection tree | — | **Yes** (icons + colours from your instance) |
+| Search your library from the popup | — | **Yes** (title, URL, notes, tag names) |
+| Tag browse with counts and dates | — | **Yes** |
+| Edit / delete existing links | — (its edit/delete calls only serve bookmark sync) | **Yes** |
+| Drag links between collections | — | **Yes** (spring-loaded folders) |
+| Create / rename / delete collections | — | **Yes** |
+| Nested path create (`Dev/Rust`) | — | **Yes** |
+| Save all open tabs | Yes (context menu) | **Yes** (new dated session collection, nest under `Sessions`, tags) |
+| Reopen a collection as a window | — | **Yes** |
+| Already-saved signal | in the popup, current page only; "view" opens the web app | **toolbar badge**, background-refreshed, no popup needed |
 | Works with self-hosted + cloud | Yes | **Yes** |
 
 

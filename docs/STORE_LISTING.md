@@ -43,9 +43,11 @@ re-versioned for listing copy.
 
 > Your Linkwarden library in a popup — not just a save button.
 >
-> The official extension is built to capture the page you are on. This one is built
-> for everything after that: the collections, tags and links you have already saved,
-> one click from the toolbar, without opening the web app to make every small change.
+> The official extension's popup is an "Add Link" form for the page you are on: great for
+> capturing, but to find something you already saved you go to the web app. This one is
+> built for everything after the save — your collections, tags and links, one click from
+> the toolbar. The two work side by side; only the official one does screenshot archiving
+> and browser-bookmark sync.
 >
 > You need your own Linkwarden instance — self-hosted or Linkwarden Cloud — and an
 > API token. This is a client for it, not a bookmark service of its own.
