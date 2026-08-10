@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+
+## [Unreleased]
+
+### Added
+
+- **Open all links for a tag**: in Tags browse mode, drilling into a tag shows an
+  "open all in a new window" action on the tag header (same `windows.create` path
+  folders already use). Uses the cached links for that tag.
+
+### Changed
+
+- **Open-all confirm only for larger batches**: folders and tags open immediately
+  when there are 10 or fewer links; above that the confirm step still asks, and
+  now shows the link count.
+
+
 ## [1.1.1] - 2026-08-04
 
 Version bump for the Chrome Web Store upload: the 1.1.0 package number was

@@ -95,6 +95,10 @@ export function getFullPathName(allFolders: Folder[], targetFolder: Folder) {
 
 export const defaultFolderColor = '#0ea5e9';
 
+// Open-all skips the confirm step at or below this many links; larger batches still ask.
+export const OPEN_ALL_CONFIRM_THRESHOLD = 10;
+
+
 export function normalizeColor(color: string) {
   if (!color || !/^#([A-Fa-f0-9]{3}$|[A-Fa-f0-9]{6}$|[A-Fa-f0-9]{8}$)/.test(color)) {
     return defaultFolderColor;

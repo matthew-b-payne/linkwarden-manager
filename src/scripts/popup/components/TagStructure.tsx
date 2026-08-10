@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronLeft, Link2, Search, Tag as TagIcon, X } from 'lucide-react';
+import { ChevronLeft, ExternalLink, Link2, Search, Tag as TagIcon, X } from 'lucide-react';
 import { Link, NewLink, Tag } from '@/scripts/utils/interfaces';
+import { OPEN_ALL_CONFIRM_THRESHOLD } from '@/scripts/utils/utils';
 import { SearchResults } from './SearchResults';
 
 interface Props {
@@ -14,7 +15,9 @@ interface Props {
   showEditLinkModal: (link: NewLink) => void;
   canShowOverlayButtons: boolean;
   openLinksInNewTab: boolean;
+  openAllUrls: (urls: string[]) => void;
 }
+
 
 interface TagStats {
   count: number;
@@ -49,8 +52,10 @@ export const TagStructure = ({
   showEditLinkModal,
   canShowOverlayButtons,
   openLinksInNewTab,
+  openAllUrls,
 }: Props) => {
   const [tagFilter, setTagFilter] = useState('');
+  const [showConfirmOpenAll, setShowConfirmOpenAll] = useState(false);
 
   // One O(n) pass over the already-cached link set — same data search uses.
   // Cheap even for thousands of links; no extra API calls.
@@ -95,23 +100,74 @@ export const TagStructure = ({
 
   if (selectedTag) {
     const selectedStats = statsByTagId.get(selectedTag.id);
+    const linkCount = selectedStats?.count ?? linksForTag.length;
+    const canOpenAll = canShowOverlayButtons && linksForTag.length > 0;
+
     return (
       <div>
         <button
           type="button"
-          onClick={() => onSelectTag(null)}
+          onClick={() => {
+            setShowConfirmOpenAll(false);
+            onSelectTag(null);
+          }}
           className="mb-2 flex items-center gap-1 text-sm text-primary hover:text-primary-hover focus:outline-none"
         >
           <ChevronLeft size={16} />
           All tags
         </button>
-        <div className="mb-2 flex items-center gap-2 rounded-md bg-surface px-2 py-1.5 border border-border">
+        <div className="relative mb-2 flex items-center gap-2 rounded-md bg-surface px-2 py-1.5 border border-border">
           <TagIcon size={16} className="text-primary shrink-0" />
           <span className="text-sm font-medium truncate flex-grow">{selectedTag.name}</span>
           <span className="inline-flex items-center gap-1 text-xs text-muted shrink-0">
             <Link2 size={12} />
-            {selectedStats?.count ?? linksForTag.length}
+            {linkCount}
           </span>
+          {canOpenAll && !showConfirmOpenAll && (
+            <button
+              type="button"
+              className="text-muted hover:text-success shrink-0"
+              title="Open all links in a new window"
+              onClick={() => {
+                if (linksForTag.length <= OPEN_ALL_CONFIRM_THRESHOLD) {
+                  openAllUrls(linksForTag.map((link) => link.url));
+                  return;
+                }
+                setShowConfirmOpenAll(true);
+              }}
+            >
+              <ExternalLink size={16} />
+            </button>
+          )}
+          {showConfirmOpenAll && (
+            <div
+              className="absolute inset-0 z-20 flex items-center justify-center bg-surface/95 rounded-md px-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center text-xs">
+                <span className="mr-2">
+                  Open {linksForTag.length} link{linksForTag.length === 1 ? '' : 's'} in a new window?
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    openAllUrls(linksForTag.map((link) => link.url));
+                    setShowConfirmOpenAll(false);
+                  }}
+                  className="px-2 py-1 bg-primary text-primary-content rounded-md mr-2 hover:bg-primary-hover"
+                >
+                  Open
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmOpenAll(false)}
+                  className="px-2 py-1 rounded-md bg-base-300 text-base-content hover:bg-surface-hover"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         {linksForTag.length === 0 ? (
           <p className="text-sm text-muted px-1 py-2">No links with this tag in the cache.</p>
@@ -128,6 +184,7 @@ export const TagStructure = ({
       </div>
     );
   }
+
 
   if (tags.length === 0) {
     return <p className="text-sm text-muted px-1 py-2">No tags yet.</p>;

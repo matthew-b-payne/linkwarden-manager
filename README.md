@@ -90,7 +90,7 @@ archiving and bookmark sync.
 ### Power-user flows
 - **Keyboard shortcut** to save the current tab (default `Ctrl+Shift+S` / `⌘⇧S`)
 - **Save all tabs** in the window as a session (new folder, nest under `Sessions`, or existing folder + tags)
-- **Open all links** in a folder in a new window
+- **Open all links** in a folder or tag in a new window
 - **Already-saved badge** on the toolbar icon, with configurable background refresh
 - Sort links and folders independently (name / date)
 

@@ -518,19 +518,24 @@ const Popup = () => {
     });
   }, [loadAllLinks]);
 
+  const openUrlsInNewWindow = useCallback((urls: string[]) => {
+    const list = urls.filter((url) => typeof url === 'string' && url.length > 0);
+    if (list.length === 0) {
+      return;
+    }
+    getBrowser().windows.create({ url: list });
+  }, []);
+
   const openAllInFolder = useCallback((folderId: number) => {
     // fetch the folder's links fresh so restore works even for collapsed/uncached folders
     getBrowser().runtime.sendMessage({action: 'fetchLinks', collectionId: folderId}).then((res: ApiReturnType<Link[]>) => {
       if (!res.success || !res.data) {
         return;
       }
-      const urls = res.data.map((link) => link.url);
-      if (urls.length === 0) {
-        return;
-      }
-      getBrowser().windows.create({url: urls});
+      openUrlsInNewWindow(res.data.map((link) => link.url));
     });
-  }, []);
+  }, [openUrlsInNewWindow]);
+
 
   // Drag & drop target handler: moves a link into another folder. The local cache is updated
   // first so the tree reacts instantly, and rolled back verbatim if the API call fails — a
@@ -746,7 +751,9 @@ const Popup = () => {
               showEditLinkModal={openEditLinkModal}
               canShowOverlayButtons={!isAnyModalShown}
               openLinksInNewTab={openLinksInNewTab}
+              openAllUrls={openUrlsInNewWindow}
             />
+
           ) : (
             <FolderStructure
               folders={folders}

@@ -3,7 +3,7 @@ import React, { DragEventHandler, useEffect, useRef, useState } from 'react';
 import { LinkItem } from './LinkItem';
 import { Folder as FolderInterface, Link, NewLink } from '@/scripts/utils/interfaces';
 import { canDropLinkInFolder, readDraggedLinkId } from '@/scripts/utils/linkDrag';
-import { defaultFolderColor } from '@/scripts/utils/utils';
+import { defaultFolderColor, OPEN_ALL_CONFIRM_THRESHOLD } from '@/scripts/utils/utils';
 import { IconWeight } from '@phosphor-icons/react';
 import FolderIcon from './FolderIcon';
 
@@ -188,6 +188,11 @@ export const FolderItem = ({
                 title="Open all links in a new window"
                 onClick={(e) => {
                   e.stopPropagation();
+                  const count = links?.length ?? 0;
+                  if (count > 0 && count <= OPEN_ALL_CONFIRM_THRESHOLD) {
+                    openAllInFolder(folder.id);
+                    return;
+                  }
                   setShowConfirmOpenAll(true);
                 }}
               >
@@ -222,7 +227,11 @@ export const FolderItem = ({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="text-center text-xs">
-              <span className="mr-2">Open all links in a new window?</span>
+              <span className="mr-2">
+                {links
+                  ? `Open ${links.length} link${links.length === 1 ? '' : 's'} in a new window?`
+                  : 'Open all links in a new window?'}
+              </span>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
