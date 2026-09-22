@@ -13,6 +13,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   "open all in a new window" action on the tag header (same `windows.create` path
   folders already use). Uses the cached links for that tag.
 
+- **Folder sort "None"**: Sort Folders can now leave the order returned by
+  Linkwarden instead of re-sorting by name or date. That order is the web app's
+  sidebar (`collectionOrder`), so a custom sequence like "work, fun, important"
+  no longer needs numeric prefixes. Existing installs stay on Name Ascending.
+
 ### Changed
 
 - **Open-all confirm only for larger batches**: folders and tags open immediately

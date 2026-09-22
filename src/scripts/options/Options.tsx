@@ -328,6 +328,7 @@ const Options = () => {
                 <option key="name_descending" value="name_descending">Name Descending</option>
                 <option key="date_ascending" value="date_ascending">Date Ascending</option>
                 <option key="date_descending" value="date_descending">Date Descending</option>
+                <option key="none" value="none">None</option>
               </select>
             </div>
             <div className='flex space-x-4 pt-4'>

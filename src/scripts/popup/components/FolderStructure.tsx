@@ -35,16 +35,19 @@ export const FolderStructure = ({
   openLinksInNewTab,
   onMoveLink,
 }: Props) => {
-  // set the sorting function depending on the parameter
-  // do not pull the condition into the function to make sure the performance is not impacted when sorting a huge number of links
-  const sortFunction = sortFolders == 'name_ascending'
-    ? (a: Folder, b: Folder) => a.name.localeCompare(b.name)
-    : sortFolders == 'name_descending'
-      ? (a: Folder, b: Folder) => b.name.localeCompare(a.name)
-      : sortFolders == 'date_ascending'
-        ? (a: Folder, b: Folder) => new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf()
-        : (a: Folder, b: Folder) => new Date(b.createdAt).valueOf() - new Date(a.createdAt).valueOf();
-  const sortedFolders: Folder[] = [...folders].sort(sortFunction);
+  // "none" keeps the order GET /api/v1/collections already applied (Linkwarden's
+  // collectionOrder, then createdAt). Every other value re-sorts siblings.
+  const sortedFolders: Folder[] = sortFolders === 'none'
+    ? folders
+    : [...folders].sort(
+        sortFolders === 'name_ascending'
+          ? (a: Folder, b: Folder) => a.name.localeCompare(b.name)
+          : sortFolders === 'name_descending'
+            ? (a: Folder, b: Folder) => b.name.localeCompare(a.name)
+            : sortFolders === 'date_ascending'
+              ? (a: Folder, b: Folder) => new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf()
+              : (a: Folder, b: Folder) => new Date(b.createdAt).valueOf() - new Date(a.createdAt).valueOf(),
+      );
 
   const childrenByParentId = new Map<number, Folder[]>();
   sortedFolders.forEach((folder) => {
