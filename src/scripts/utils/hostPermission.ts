@@ -25,11 +25,25 @@ export function hostOriginPattern(host: string | undefined): string | null {
     return null;
   }
 }
+function hasAllUrlsPermission(): boolean {
+  try {
+    const manifest = getBrowser().runtime.getManifest();
+    return Boolean(
+      manifest.permissions?.includes('<all_urls>') ||
+      manifest.permissions?.includes('*://*/*')
+    );
+  } catch {
+    return false;
+  }
+}
 
 export async function hasHostAccess(host: string | undefined): Promise<boolean> {
   const origin = hostOriginPattern(host);
   if (!origin) {
     return false;
+  }
+  if (hasAllUrlsPermission()) {
+    return true;
   }
   try {
     return await getBrowser().permissions.contains({ origins: [origin] });
@@ -46,6 +60,9 @@ export async function requestHostAccess(host: string | undefined): Promise<boole
   if (!origin) {
     return false;
   }
+  if (hasAllUrlsPermission()) {
+    return true;
+  }
   try {
     return await getBrowser().permissions.request({ origins: [origin] });
   } catch (error) {
@@ -57,7 +74,7 @@ export async function requestHostAccess(host: string | undefined): Promise<boole
 // Pointing the extension at a different instance leaves the old origin granted forever otherwise.
 export async function dropHostAccess(host: string | undefined): Promise<void> {
   const origin = hostOriginPattern(host);
-  if (!origin) {
+  if (!origin || hasAllUrlsPermission()) {
     return;
   }
   try {

@@ -78,10 +78,16 @@ async function handleApiAction(request: ApiRequest): Promise<ApiReturnType<unkno
 // flashes an error badge on the toolbar icon for a few seconds — the only feedback available
 // if the shortcut can't even get the popup open (e.g. not configured, or openPopup rejected)
 function flashErrorBadge() {
-  const action = getActionApi();
-  action.setBadgeBackgroundColor({ color: '#dc2626' });
-  action.setBadgeText({ text: '!' });
-  setTimeout(() => action.setBadgeText({ text: '' }), 3000);
+  try {
+    const action = getActionApi();
+    void Promise.resolve(action.setBadgeBackgroundColor({ color: '#dc2626' })).catch(() => undefined);
+    void Promise.resolve(action.setBadgeText({ text: '!' })).catch(() => undefined);
+    setTimeout(() => {
+      void Promise.resolve(action.setBadgeText({ text: '' })).catch(() => undefined);
+    }, 3000);
+  } catch (error) {
+    console.warn('Could not flash error badge: ', error);
+  }
 }
 
 const LINKS_REFRESH_ALARM = 'refresh-links-cache';
@@ -114,13 +120,18 @@ async function getSavedUrlSet(): Promise<Set<string>> {
 // which also self-heals any badge left over from before the user turned the feature off.
 async function updateBadgeForTab(tabId: number, url: string | undefined, savedUrls: Set<string>) {
   const action = getActionApi();
+  if (!action) {
+    return;
+  }
   const { enabled } = await getSavedIndicatorPreferences();
   const isSaved = enabled && !!url && /^https?:\/\//.test(url) && savedUrls.has(normalizeUrlForComparison(url));
-  action.setBadgeText({ text: isSaved ? '\u2713' : '', tabId });
+  // MV3 action methods return Promises — must await (or catch) so a permission/tab race
+  // does not show up as "Uncaught (in promise)" in chrome://extensions.
+  await Promise.resolve(action.setBadgeText({ text: isSaved ? '\u2713' : '', tabId }));
   if (isSaved) {
-    action.setBadgeBackgroundColor({ color: SAVED_BADGE_COLOR, tabId });
+    await Promise.resolve(action.setBadgeBackgroundColor({ color: SAVED_BADGE_COLOR, tabId }));
   }
-  action.setTitle({ tabId, title: isSaved ? 'This page is saved in Linkwarden' : '' });
+  await Promise.resolve(action.setTitle({ tabId, title: isSaved ? 'This page is saved in Linkwarden' : '' }));
 }
 
 async function updateBadgeForAllTabs() {
@@ -162,9 +173,16 @@ async function refreshLinksCacheInBackground() {
 
 async function clearAllBadges() {
   const action = getActionApi();
+  if (!action) {
+    return;
+  }
   const tabs = await getBrowser().tabs.query({});
   await Promise.all(
-    tabs.map((tab: { id?: number }) => (tab.id != null ? action.setBadgeText({ text: '', tabId: tab.id }) : Promise.resolve()))
+    tabs.map((tab: { id?: number }) =>
+      tab.id != null
+        ? Promise.resolve(action.setBadgeText({ text: '', tabId: tab.id })).catch(() => undefined)
+        : Promise.resolve()
+    )
   );
 }
 
@@ -193,38 +211,50 @@ async function syncSavedIndicatorAlarm() {
 // needing to know the badge exists.
 getBrowser().storage.onChanged.addListener((changes: Record<string, unknown>, areaName: string) => {
   if (areaName === 'local' && 'linksByFolder' in changes) {
-    updateBadgeForAllTabs();
+    void updateBadgeForAllTabs().catch((error) => console.warn('Badge refresh on storage change failed: ', error));
   }
 });
 
 getBrowser().tabs.onUpdated.addListener(async (tabId: number, changeInfo: { url?: string }) => {
   if (changeInfo.url) {
-    updateBadgeForTab(tabId, changeInfo.url, await getSavedUrlSet());
+    try {
+      await updateBadgeForTab(tabId, changeInfo.url, await getSavedUrlSet());
+    } catch (error) {
+      console.warn('Badge update on tab URL change failed: ', error);
+    }
   }
 });
 
 getBrowser().tabs.onActivated.addListener(async ({ tabId }: { tabId: number }) => {
-  const [tab, savedUrls] = await Promise.all([getBrowser().tabs.get(tabId), getSavedUrlSet()]);
-  updateBadgeForTab(tabId, tab.url, savedUrls);
+  try {
+    const [tab, savedUrls] = await Promise.all([getBrowser().tabs.get(tabId), getSavedUrlSet()]);
+    await updateBadgeForTab(tabId, tab.url, savedUrls);
+  } catch (error) {
+    console.warn('Badge update on tab activate failed: ', error);
+  }
 });
 
 // Only true install/browser-startup events trigger an immediate background refresh — NOT every
 // service worker wake, which under MV3 happens far more often than we want to hit the API.
-getBrowser().runtime.onInstalled.addListener(() => refreshLinksCacheInBackground());
-getBrowser().runtime.onStartup.addListener(() => refreshLinksCacheInBackground());
+getBrowser().runtime.onInstalled.addListener(() => {
+  void refreshLinksCacheInBackground().catch((error) => console.warn('Install cache refresh failed: ', error));
+});
+getBrowser().runtime.onStartup.addListener(() => {
+  void refreshLinksCacheInBackground().catch((error) => console.warn('Startup cache refresh failed: ', error));
+});
 
-syncSavedIndicatorAlarm();
+void syncSavedIndicatorAlarm().catch((error) => console.warn('Alarm sync on start failed: ', error));
 
 getBrowser().alarms.onAlarm.addListener((alarm: { name: string }) => {
   if (alarm.name === LINKS_REFRESH_ALARM) {
-    refreshLinksCacheInBackground();
+    void refreshLinksCacheInBackground().catch((error) => console.warn('Alarm cache refresh failed: ', error));
   }
 });
 
 // Re-applies whatever is already cached to every open tab's badge on every script (re)start —
 // covers both a real browser launch and the service worker being respawned after Chrome killed
 // it idle. Cheap: one storage read, no network.
-updateBadgeForAllTabs();
+void updateBadgeForAllTabs().catch((error) => console.warn('Initial badge apply failed: ', error));
 
 getBrowser().commands.onCommand.addListener(async (command: string) => {
   if (command !== 'add_current_tab') {
@@ -268,21 +298,40 @@ getBrowser().runtime.onMessage.addListener(function (message: unknown, _sender: 
   const action = messageAction(message);
 
   if (action === 'hasValidConfiguration') {
-    getCredentials().then(({ host, token }) => sendResponse(!!host && !!token));
+    getCredentials()
+      .then(({ host, token }) => sendResponse(!!host && !!token))
+      .catch((error) => {
+        console.warn('hasValidConfiguration failed: ', error);
+        sendResponse(false);
+      });
     return true;
   } else if (action === 'reload') {
     // Credentials are read on-demand elsewhere, so there's nothing to refresh for those. The
     // "already saved" indicator's on/off state and refresh interval are cached in the alarm
     // schedule though, so re-sync them, then immediately refresh+rebadge (a no-op if the
     // indicator is now disabled) rather than leaving the user waiting for the next alarm tick.
-    syncSavedIndicatorAlarm().then(() => refreshLinksCacheInBackground()).then(() => sendResponse(true));
+    syncSavedIndicatorAlarm()
+      .then(() => refreshLinksCacheInBackground())
+      .then(() => sendResponse(true))
+      .catch((error) => {
+        console.warn('reload action failed: ', error);
+        sendResponse(false);
+      });
     return true;
   }
 
   // every remaining action hits the Linkwarden API and always sends a response
   // (success or a failure object) so callers never hang waiting on a dropped message.
   // Only this extension's own pages send these, and they build the payload from ApiRequest.
-  handleApiAction(message as ApiRequest).then(sendResponse);
+  handleApiAction(message as ApiRequest)
+    .then(sendResponse)
+    .catch((error) => {
+      console.error('API action failed: ', error);
+      sendResponse({
+        success: false,
+        data: error instanceof Error ? error.message : String(error),
+      });
+    });
   return true;
 });
 

@@ -17,6 +17,14 @@ import { hasHostAccess, hostOriginPattern, requestHostAccess } from '../utils/ho
 
 type BrowseMode = 'folders' | 'tags';
 
+// Surface the real Linkwarden error (result.data is errorToMessage() on failure)
+// instead of a generic "try again", so users see the actual reason (e.g. duplicate,
+// inaccessible collection, validation error).
+const failureMessage = (result: ApiReturnType<unknown>, fallback: string): string => {
+  const detail = typeof result.data === 'string' ? result.data.trim() : '';
+  return detail ? `${fallback}\n\n${detail}` : fallback;
+};
+
 
 const Popup = () => {
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -381,7 +389,7 @@ const Popup = () => {
             loadAllLinks();
           }
         } else {
-          alert('Error saving link. Please try again.');
+          alert(failureMessage(result, 'Error saving link. Please try again.'));
         }
     });
   };
@@ -392,7 +400,7 @@ const Popup = () => {
           closeAddFolderModal();
           loadAllLinks();
         } else {
-          alert('Error saving folder. Please try again.');
+          alert(failureMessage(result, 'Error saving folder. Please try again.'));
         }
     });
   };
@@ -427,7 +435,7 @@ const Popup = () => {
           }
         });
       } else {
-        alert('Error creating folder. Please try again.');
+        alert(failureMessage(result, 'Error creating folder. Please try again.'));
       }
       setIsCreatingFolder(false);
     }).catch(() => {
@@ -471,7 +479,7 @@ const Popup = () => {
         closeEditLinkModal();
         loadAllLinks();
       } else {
-        alert('Error updating link. Please try again.');
+        alert(failureMessage(response, 'Error updating link. Please try again.'));
       }
     });
   };
@@ -483,7 +491,7 @@ const Popup = () => {
         closeEditFolderModal();
         loadAllLinks();
       } else {
-        alert('Error updating folder. Please try again.');
+        alert(failureMessage(response, 'Error updating folder. Please try again.'));
       }
     });
   };

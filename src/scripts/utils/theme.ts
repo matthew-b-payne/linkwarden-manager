@@ -113,14 +113,20 @@ export function initTheme() {
     systemListenerAttached = true;
   }
 
-  void Promise.all([loadThemePreference(), loadAccentColor()]).then(([preference, accent]) => {
-    if (preference !== currentPreference) {
-      applyTheme(preference);
-    }
-    if (accent !== currentAccent) {
-      applyAccent(accent);
-    }
-    writeMirror(THEME_MIRROR_KEY, preference);
-    writeMirror(ACCENT_MIRROR_KEY, accent);
-  });
+  void Promise.all([loadThemePreference(), loadAccentColor()])
+    .then(([preference, accent]) => {
+      if (preference !== currentPreference) {
+        applyTheme(preference);
+      }
+      if (accent !== currentAccent) {
+        applyAccent(accent);
+      }
+      writeMirror(THEME_MIRROR_KEY, preference);
+      writeMirror(ACCENT_MIRROR_KEY, accent);
+    })
+    .catch((error) => {
+      // Mirror already applied above; a storage hiccup must not become an uncaught rejection
+      // on the options/popup document.
+      console.warn('Could not reconcile theme from extension storage: ', error);
+    });
 }

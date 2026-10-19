@@ -15,7 +15,7 @@ Everything the Developer Dashboard asks for, prepared. Package: `extension.zip`
 | Field | Value |
 | --- | --- |
 | Name | Linkwarden Manager (Unofficial) |
-| Version | 1.1.2 |
+| Version | 1.1.3 |
 | Manifest | v3 |
 | Permissions | `storage`, `alarms`, `tabs`, `activeTab`, `windows` |
 | Host permissions | none declared; `optional_host_permissions: *://*/*`, requested at runtime for the single origin the user configures |

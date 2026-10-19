@@ -5,17 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 
-## [Unreleased]
+## [1.1.3] - 2026-10-18
 
+### Fixed
 
-## [1.1.2] - 2026-09-21
+- **Firefox host permission false-declined warning on Options Save**: on Firefox (MV2), `<all_urls>` is granted at install time. Calling `browser.permissions.request()` for the user's Linkwarden host failed because the origin was not declared under `optional_permissions`, incorrectly displaying a red "access was declined" warning even though settings were saved and the extension could reach the server.
+- **Removed invalid `windows` permission from Firefox manifest**: Firefox WebExtensions support `browser.windows` without declaring the `windows` permission, eliminating an AMO linter warning.
+- **Firefox AMO upload**: the manifest now declares `browser_specific_settings.gecko.data_collection_permissions`, required for new AMO submissions.
+- **Firefox add-on id**: set to `linkwarden-manager@matthew-b-payne.github.io`.
 
 ### Added
 
 - **Open all links for a tag**: in Tags browse mode, drilling into a tag shows an
   "open all in a new window" action on the tag header (same `windows.create` path
   folders already use). Uses the cached links for that tag.
-
 - **Folder sort "None"**: Sort Folders can now leave the order returned by
   Linkwarden instead of re-sorting by name or date. That order is the web app's
   sidebar (`collectionOrder`), so a custom sequence like "work, fun, important"
@@ -26,6 +29,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Open-all confirm only for larger batches**: folders and tags open immediately
   when there are 10 or fewer links; above that the confirm step still asks, and
   now shows the link count.
+
+### Fixed
+
+- **Chrome load errors from a Firefox package left in `dist/`**: the last build on
+  disk was `TARGET_BROWSER=FIREFOX` (MV2 `browser_action` + persistent background),
+  so Chrome's extension page screamed "Manifest version 2 is deprecated" and the
+  service worker never came up as MV3. Default remains Chrome; added
+  `yarn build:chrome` / `yarn build:firefox` so the target is explicit.
+- **Popup/options script preload cross-world warnings on Chrome**: Vite emitted
+  absolute `/assets/…` `modulepreload` links that Chrome refused to reuse from
+  extension pages. Build now uses `base: './'` and disables `modulePreload`.
+- **Missing `windows` permission**: open-all for folders/tags calls
+  `chrome.windows.create`; it is now declared for both targets so the action
+  does not fail after install.
+- Chrome `action` now carries `default_icon` / `default_title` (parity with the
+  Firefox toolbar entry) so the toolbar icon is not blank before the SW paints a badge.
+- **Uncaught (in promise) noise on Options / background**: Options Save had no
+  try/catch around storage + `sendMessage`, mount storage reads and the shortcut
+  button left rejections unhandled, and MV3 `action.setBadge*` calls in the
+  service worker were not awaited. Failures are now caught (Save still persists
+  settings even if the background reload blips).
 
 
 ## [1.1.1] - 2026-08-04

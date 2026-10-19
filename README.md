@@ -116,7 +116,7 @@ archiving and bookmark sync.
 git clone https://github.com/matthew-b-payne/linkwarden-manager.git
 cd linkwarden-manager
 yarn install
-TARGET_BROWSER=CHROME yarn build    # or FIREFOX
+yarn build:chrome    # or: yarn build:firefox
 ```
 
 Output lands in `dist/`.
@@ -126,7 +126,7 @@ Output lands in `dist/`.
 2. **Load unpacked** → select the `dist` folder
 
 ### Firefox
-1. `TARGET_BROWSER=FIREFOX yarn build`
+1. `yarn build:firefox`
 2. `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on** → pick the built manifest under `dist`  
    (or install a signed `.xpi` from Releases when published)
 
@@ -159,11 +159,10 @@ ships with no site access at all and asks only for that origin.
 ## Build targets
 
 ```bash
-TARGET_BROWSER=CHROME yarn build
-TARGET_BROWSER=FIREFOX yarn build
+yarn build:chrome     # default TARGET_BROWSER=CHROME
+yarn build:firefox
+# equivalent: TARGET_BROWSER=CHROME yarn build
 ```
-
-Always leave `dist/` as the browser you intend to load next (Chrome last if you dual-build).
 
 ---
 

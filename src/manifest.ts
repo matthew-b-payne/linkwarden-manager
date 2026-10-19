@@ -8,6 +8,10 @@ interface ManifestChrome {
   homepage_url: string;
   action: {
     default_popup: string;
+    default_icon: {
+      [key: number]: string;
+    };
+    default_title: string;
   };
   options_ui: {
     page: string;
@@ -79,6 +83,9 @@ interface ManifestFirefox {
     gecko: {
       id: string;
       strict_min_version: string;
+      data_collection_permissions: {
+        required: string[];
+      };
     }
   }
 }
@@ -98,6 +105,12 @@ const createBaseChromeManifest = async (): Promise<ManifestChrome> => {
       // ./assets/icon-128.png is missing from the uploaded package".
       action: {
         default_popup: 'src/scripts/popup/popup.html',
+        default_icon: {
+          16: 'assets/icon-16.png',
+          48: 'assets/icon-48.png',
+          128: 'assets/icon-128.png',
+        },
+        default_title: pkg.longName ?? pkg.name ?? 'GIVE ME A NAME',
       },
       options_ui: {
         page: 'src/scripts/options/options.html',
@@ -112,7 +125,7 @@ const createBaseChromeManifest = async (): Promise<ManifestChrome> => {
         48: 'assets/icon-48.png',
         128: 'assets/icon-128.png',
       },
-      permissions: ['storage', 'alarms', 'tabs', 'activeTab'],
+      permissions: ['storage', 'alarms', 'tabs', 'activeTab', 'windows'],
       // The user's Linkwarden instance can be at any address, so no fixed origin can be declared;
       // requested at runtime for that one origin when the host is saved in Options, which keeps
       // the install free of the "read and change all your data on all websites" warning.
@@ -185,10 +198,21 @@ const createBaseFirefoxManifest = async (): Promise<ManifestFirefox> => {
       },
       browser_specific_settings: {
         gecko: {
-          id: "linkwarden_viewer@tidone",
+          id: "linkwarden-manager@matthew-b-payne.github.io",
           // 113 is the first Firefox with oklch() and color-mix() enabled by default, both of
           // which the accent-colour tokens in src/styles/index.css depend on.
-          strict_min_version: "113.0"
+          strict_min_version: "113.0",
+          // Required by AMO for new submissions since 2025-11-03. These match PRIVACY.md:
+          // the API token, saved link content, tab URLs on save, and favicon hostnames sent
+          // to DuckDuckGo. "none" would be a false declaration.
+          data_collection_permissions: {
+            required: [
+              "authenticationInfo",
+              "websiteContent",
+              "browsingActivity",
+              "websiteActivity",
+            ],
+          },
         }
       }
     };

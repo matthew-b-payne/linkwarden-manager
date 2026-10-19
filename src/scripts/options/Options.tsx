@@ -40,54 +40,55 @@ const Options = () => {
   const [accent, setAccent] = useState<AccentColor>(DEFAULT_ACCENT_COLOR);
 
   useEffect(() => {
+    // Storage reads are best-effort on mount — a rejection here would otherwise be an
+    // uncaught promise on the Options page (Chrome's extension error list) even though
+    // the form still works with empty defaults.
+    const ignore = () => undefined;
     getStorageItem('host').then((value) => {
-      if(value)
-        setHost(value);
-    });
+      if (value) setHost(value);
+    }).catch(ignore);
     getStorageItem('token').then((value) => {
-      if(value)
-        setToken(value);
-    });
+      if (value) setToken(value);
+    }).catch(ignore);
     getStorageItem('sortLinks').then((value) => {
-      if(value) {
-        setLinkSort(value);
-      }
-    });
+      if (value) setLinkSort(value);
+    }).catch(ignore);
     getStorageItem('sortFolders').then((value) => {
-      if(value) {
-        setFolderSort(value);
-      }
-    });
+      if (value) setFolderSort(value);
+    }).catch(ignore);
     getStorageItem('openNewTab').then((value) => {
-      if(value) {
-        setOpenLinksInNewTab(value);
-      }
-    });
+      if (value) setOpenLinksInNewTab(value);
+    }).catch(ignore);
     // unset (never saved before) should default to enabled, so only overwrite the default
     // when a value has actually been stored — unlike the booleans above, which default to off
     getStorageItem('savedIndicatorEnabled').then((value) => {
-      if (value !== undefined) {
-        setSavedIndicatorEnabled(value);
-      }
-    });
+      if (value !== undefined) setSavedIndicatorEnabled(value);
+    }).catch(ignore);
     getStorageItem('savedIndicatorRefreshMinutes').then((value) => {
-      if (value) {
-        setSavedIndicatorRefreshMinutes(value);
-      }
-    });
-    loadThemePreference().then(setTheme);
-    loadAccentColor().then(setAccent);
+      if (value) setSavedIndicatorRefreshMinutes(value);
+    }).catch(ignore);
+    loadThemePreference().then(setTheme).catch(ignore);
+    loadAccentColor().then(setAccent).catch(ignore);
   }, []);
 
   const openShortcutSettings = () => {
     const browserApi = getBrowser();
     // Firefox exposes a dedicated API for this; Chrome has no equivalent, so fall back to
     // deep-linking its shortcuts page directly (tabs.create needs no extra permission).
-    if (browserApi.commands?.openShortcutSettings) {
-      browserApi.commands.openShortcutSettings();
-    } else {
-      browserApi.tabs.create({ url: 'chrome://extensions/shortcuts' });
-    }
+    // Always attach a rejection handler: chrome.tabs.create returns a Promise, and an
+    // unhandled rejection shows up as "Uncaught (in promise)" against options.js even
+    // when the rest of the page is fine.
+    const open = browserApi.commands?.openShortcutSettings
+      ? browserApi.commands.openShortcutSettings()
+      : browserApi.tabs.create({ url: 'chrome://extensions/shortcuts' });
+    void Promise.resolve(open).catch((error: unknown) => {
+      console.error('Could not open shortcut settings: ', error);
+      setStatus({
+        isError: true,
+        text: 'Could not open shortcut settings. Open chrome://extensions/shortcuts manually.',
+      });
+      setTimeout(() => setStatus({ isError: false, text: '' }), 8000);
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -99,36 +100,48 @@ const Options = () => {
       return;
     }
 
-    // Before any await: Chrome only honours a permission request while the Save click's user
-    // gesture is still live, and a granted origin re-requested is a no-op that resolves true.
-    const granted = await requestHostAccess(host);
+    try {
+      // Before any await: Chrome only honours a permission request while the Save click's user
+      // gesture is still live, and a granted origin re-requested is a no-op that resolves true.
+      const granted = await requestHostAccess(host);
 
-    const previousHost = await getStorageItem('host');
+      const previousHost = await getStorageItem('host');
 
-    await setStorageItem('host', host);
-    await setStorageItem('token', token);
-    await setStorageItem('sortLinks', linkSort);
-    await setStorageItem('sortFolders', folderSort);
-    await setStorageItem('openNewTab', openLinksInNewTab);
-    await setStorageItem('savedIndicatorEnabled', savedIndicatorEnabled);
-    await setStorageItem('savedIndicatorRefreshMinutes', savedIndicatorRefreshMinutes);
+      await setStorageItem('host', host);
+      await setStorageItem('token', token);
+      await setStorageItem('sortLinks', linkSort);
+      await setStorageItem('sortFolders', folderSort);
+      await setStorageItem('openNewTab', openLinksInNewTab);
+      await setStorageItem('savedIndicatorEnabled', savedIndicatorEnabled);
+      await setStorageItem('savedIndicatorRefreshMinutes', savedIndicatorRefreshMinutes);
 
-    if (granted && hostOriginPattern(previousHost) !== origin) {
-      await dropHostAccess(previousHost);
+      if (granted && hostOriginPattern(previousHost) !== origin) {
+        await dropHostAccess(previousHost);
+      }
+
+      // Best-effort: settings are already on disk. A sleeping/restarting service worker can
+      // reject sendMessage; that must not undo a successful save or surface as uncaught.
+      try {
+        await getBrowser().runtime.sendMessage({ action: 'reload' });
+      } catch (error) {
+        console.warn('Background reload after save failed: ', error);
+      }
+
+      // Settings are still saved when access is declined — losing a pasted token would be worse —
+      // but nothing can reach the server until it is granted, so this is not a success message.
+      if (!granted) {
+        setStatus({ isError: true, text: `Saved, but access to ${origin} was declined. Press Save again and allow it, otherwise the extension cannot reach your Linkwarden.` });
+        setTimeout(() => setStatus({ isError: false, text: '' }), 10000);
+        return;
+      }
+
+      setStatus({ isError: false, text: 'Options saved successfully.' });
+      setTimeout(() => setStatus({ isError: false, text: '' }), 3000);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setStatus({ isError: true, text: `Could not save options: ${message}` });
+      setTimeout(() => setStatus({ isError: false, text: '' }), 8000);
     }
-
-    await getBrowser().runtime.sendMessage({ action: 'reload' });
-
-    // Settings are still saved when access is declined — losing a pasted token would be worse —
-    // but nothing can reach the server until it is granted, so this is not a success message.
-    if (!granted) {
-      setStatus({ isError: true, text: `Saved, but access to ${origin} was declined. Press Save again and allow it, otherwise the extension cannot reach your Linkwarden.` });
-      setTimeout(() => setStatus({ isError: false, text: '' }), 10000);
-      return;
-    }
-
-    setStatus({ isError: false, text: 'Options saved successfully.' });
-    setTimeout(() => setStatus({ isError: false, text: '' }), 3000);
   };
 
   const handleRefresh = async () => {

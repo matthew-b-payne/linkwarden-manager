@@ -34,6 +34,11 @@ console.log(' ---> Starting Vite Build 🤞 <---')
 
 // Vite config
 export default defineConfig({
+    // Extension pages are chrome-extension://…/src/scripts/popup/popup.html — absolute
+    // `/assets/…` URLs resolve at the extension root in theory, but Chrome still treats
+    // Vite's modulepreload links as a cross-world mismatch and drops them. Relative
+    // paths (base './') + no modulepreload keep the popup/options bundles loading cleanly.
+    base: './',
     resolve: {
         alias: [{ find: '@', replacement: path.resolve(__dirname, 'src') }]
     },
@@ -41,9 +46,7 @@ export default defineConfig({
         open: './src/index.html'
     },
     build: {
-        modulePreload: {
-            polyfill: true
-        },
+        modulePreload: false,
         rollupOptions: {
             input: rollupInput,
             output: outputOptions
